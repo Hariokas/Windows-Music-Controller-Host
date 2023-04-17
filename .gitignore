@@ -1,0 +1,24 @@
+echo "# Visual Studio cache files
+.vs/
+# Compiled files
+bin/
+obj/
+# NuGet packages
+*.nuget.targets
+packages/
+# MSTest Test Results
+TestResults/
+# Build Results
+[Bb]uild/
+# SQL Server files
+*.mdf
+*.ldf
+# Rider files
+.idea/
+*.sln.iml
+# User-specific files
+*.user
+*.suo
+*.userprefs
+# DLL files
+*.dll" > .gitignore
