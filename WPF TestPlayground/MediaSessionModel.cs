@@ -1,95 +1,76 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using WPF___Online_Arduino_Music_Player;
 
-namespace WPF_TestPlayground
+namespace WPF_TestPlayground;
+
+public class MediaSessionModel : INotifyPropertyChanged
 {
-    public class MediaSessionModel : INotifyPropertyChanged
+    private string _artist = "";
+
+    private int _id;
+    private string _mediaSessionName = "";
+    private string _playbackStatus = "";
+    private string _songName = "";
+
+    public string Information =>
+        $"Status of [{SongName}] by [{Artist}] on [{MediaSessionName}], [{Id}] - [{PlaybackStatus}]";
+
+    public int Id
     {
-        public event PropertyChangedEventHandler? PropertyChanged;
-        private SerialCommunicator serialCommunicator = SerialCommunicator.Instance;
-        string previousOutput = string.Empty;
-        public string Information
+        get => _id;
+        set
         {
-            get
-            {
-                //return $"Session name: [{Id}]; ID: [{MediaSessionName}]; Artist: [{Artist}]; Song: [{SongName}]; Playback status: [{PlaybackStatus}]";
-                NotifyArduino();
-                return $"Status of [{SongName}] by [{Artist}] on [{MediaSessionName}], [{Id}] - [{PlaybackStatus}]";
-            }
+            _id = value;
+            OnPropertyChanged();
         }
+    }
 
-        private int id;
-        public int Id
+    public string MediaSessionName
+    {
+        get => _mediaSessionName;
+        set
         {
-            get => id;
-            set
-            {
-                id = value;
-                OnPropertyChanged(nameof(Information));
-            }
+            _mediaSessionName = value;
+            OnPropertyChanged();
         }
+    }
 
-        private string mediaSessionName = "";
-        public string MediaSessionName
+    public string Artist
+    {
+        get => _artist;
+        set
         {
-            get => mediaSessionName;
-            set
-            {
-                if (string.IsNullOrEmpty(value)) return;
-                mediaSessionName = value;
-                OnPropertyChanged(nameof(Information));
-            }
+            _artist = value;
+            OnPropertyChanged();
         }
+    }
 
-        private string artist = "";
-        public string Artist
+    public string SongName
+    {
+        get => _songName;
+        set
         {
-            get => artist;
-            set
-            {
-                if (string.IsNullOrEmpty(value)) return;
-                artist = value;
-                OnPropertyChanged(nameof(Information));
-            }
+            _songName = value;
+            OnPropertyChanged();
         }
+    }
 
-        private string songName = "";
-        public string SongName
+    public string PlaybackStatus
+    {
+        get => _playbackStatus;
+        set
         {
-            get => songName;
-            set
-            {
-                if (string.IsNullOrEmpty(value)) return;
-                songName = value;
-                OnPropertyChanged(nameof(Information));
-            }
+            _playbackStatus = value;
+            OnPropertyChanged();
         }
+    }
 
-        private string playbackStatus = "";
-        public string PlaybackStatus
-        {
-            get => playbackStatus;
-            set
-            {
-                if (string.IsNullOrEmpty(value)) return;
-                playbackStatus = value;
-                OnPropertyChanged(nameof(Information));
-            }
-        }
+    public event PropertyChangedEventHandler? PropertyChanged;
 
-        private void NotifyArduino()
-        {
-            if ((!string.IsNullOrEmpty(SongName) && !string.IsNullOrEmpty(Artist))
-                || (!string.IsNullOrEmpty(MediaSessionName) && !string.IsNullOrEmpty(PlaybackStatus)))
-            {
-                serialCommunicator.UpdateArduino(this);
-            }
-        }
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
-        protected void OnPropertyChanged([CallerMemberName] string? name = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-        }
+        if (propertyName != nameof(Information)) OnPropertyChanged(nameof(Information));
     }
 }

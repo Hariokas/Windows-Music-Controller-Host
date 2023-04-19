@@ -2,87 +2,80 @@
 using System.Linq;
 using System.Windows;
 using Windows.Media.Control;
-using WindowsMediaController;
 using static WindowsMediaController.MediaManager;
 
-namespace WPF_TestPlayground
+namespace WPF_TestPlayground;
+
+public class MediaSessionHandler
 {
+    private readonly ObservableCollection<MediaSessionModel> _mediaSessionModelList;
 
-    public class MediaSessionHandler
+    public MediaSessionHandler(ObservableCollection<MediaSessionModel> mediaSessionModelList)
     {
-        private ObservableCollection<MediaSessionModel> MediaSessionModelList;
+        _mediaSessionModelList = mediaSessionModelList;
+    }
 
-        public MediaSessionHandler(ObservableCollection<MediaSessionModel> MediaSessionModelList)
+    //public void GetCurrentSession
+    //return mediaSession
+
+    public void AddSession(MediaSession mediaSession)
+    {
+        if (mediaSession == null)
+            return;
+
+        Application.Current.Dispatcher.Invoke(() =>
         {
-            this.MediaSessionModelList = MediaSessionModelList;
-        }
-
-        public void AddSession(MediaSession mediaSession)
-        {
-            if (mediaSession == null)
-                return;
-
-            Application.Current.Dispatcher.Invoke(() =>
+            _mediaSessionModelList.Add(new MediaSessionModel
             {
-                MediaSessionModelList.Add(new MediaSessionModel
-                {
-                    Id = mediaSession.GetHashCode(),
-                    MediaSessionName = mediaSession.Id
-                });
+                Id = mediaSession.GetHashCode(),
+                MediaSessionName = mediaSession.Id
             });
+        });
+    }
 
-        }
+    public void RemoveMediaSession(MediaSession mediaSession)
+    {
+        if (mediaSession == null)
+            return;
 
-        public void RemoveMediaSession(MediaSession mediaSession)
+        Application.Current.Dispatcher.Invoke(() =>
         {
-            if (mediaSession == null)
-                return;
+            for (var i = 0; i < _mediaSessionModelList.Count; i++)
+                if (_mediaSessionModelList[i].Id == mediaSession.GetHashCode())
+                    _mediaSessionModelList.Remove(_mediaSessionModelList[i]);
+        });
+    }
 
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                for (int i = 0; i < MediaSessionModelList.Count; i++)
-                {
-                    if (MediaSessionModelList[i].Id == mediaSession.GetHashCode())
-                    {
-                        MediaSessionModelList.Remove(MediaSessionModelList[i]);
-                    }
-                }
-            });
+    public void UpdatePlaybackState(MediaSession mediaSession,
+        GlobalSystemMediaTransportControlsSessionPlaybackInfo args)
+    {
+        if (mediaSession == null || args == null)
+            return;
 
-        }
+        var _mediaSession = FindMediaSession(mediaSession);
 
-        public void UpdatePlaybackState(MediaSession mediaSession, GlobalSystemMediaTransportControlsSessionPlaybackInfo args)
-        {
-            if (mediaSession == null || args == null)
-                return;
+        if (_mediaSession == null)
+            return;
 
-            var _mediaSession = FindMediaSession(mediaSession);
+        _mediaSession.PlaybackStatus = args.PlaybackStatus.ToString();
+    }
 
-            if (_mediaSession == null)
-                return;
+    public void UpdateMediaProperty(MediaSession mediaSession,
+        GlobalSystemMediaTransportControlsSessionMediaProperties args)
+    {
+        if (mediaSession == null || args == null) return;
 
-            _mediaSession.PlaybackStatus = args.PlaybackStatus.ToString();
+        var _mediaSession = FindMediaSession(mediaSession);
 
-        }
+        if (_mediaSession == null)
+            return;
 
-        public void UpdateMediaProperty(MediaSession mediaSession, GlobalSystemMediaTransportControlsSessionMediaProperties args)
-        {
-            if (mediaSession == null || args == null) return;
+        _mediaSession.Artist = args.Artist;
+        _mediaSession.SongName = args.Title;
+    }
 
-            var _mediaSession = FindMediaSession(mediaSession);
-
-            if (_mediaSession == null)
-                return;
-
-            _mediaSession.Artist = args.Artist;
-            _mediaSession.SongName = args.Title;
-
-        }
-
-        private MediaSessionModel? FindMediaSession(MediaSession _mediaSession)
-        {
-            return MediaSessionModelList.Where(x => x.Id == _mediaSession.GetHashCode()).FirstOrDefault() ?? null;
-        }
-
+    private MediaSessionModel? FindMediaSession(MediaSession mediaSession)
+    {
+        return _mediaSessionModelList?.Where(x => x.Id == mediaSession.GetHashCode()).FirstOrDefault() ?? null;
     }
 }
