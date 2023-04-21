@@ -240,7 +240,7 @@ public class MediaManager : IDisposable
     public class MediaSession
     {
         /// <summary>
-        ///     The Unique Id of the <see cref="MediaSession" />, grabbed from
+        ///     The Unique MediaSessionId of the <see cref="MediaSession" />, grabbed from
         ///     <see cref="GlobalSystemMediaTransportControlsSession.SourceAppUserModelId" /> from the Windows library.
         /// </summary>
         /// <seealso

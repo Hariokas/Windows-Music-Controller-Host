@@ -7,17 +7,23 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using WindowsMediaController;
 
 namespace WPF_TestPlayground;
 
 public class SocketController
 {
     private readonly List<WebSocket> _clients = new();
-    private readonly WebSocketCommunicator _communicator;
+    private readonly MediaManager _mediaManager;
 
-    public SocketController(string serverIp, string port, WebSocketCommunicator communicator)
+    private int _lastMessageHash;
+    private int _lastImageHash;
+
+    public event EventHandler<MediaSessionEventArgs> CommandReceived;
+
+    public SocketController(string serverIp, string port, MediaManager mediaManager)
     {
-        _communicator = communicator;
+        _mediaManager = mediaManager;
         _ = RunAsync(serverIp, port);
     }
 
@@ -100,14 +106,13 @@ public class SocketController
         try
         {
             var mediaSessionEvent = JsonConvert.DeserializeObject<MediaSessionEvent>(message);
-            _communicator.RaiseCommandReceived(this, new MediaSessionEventArgs(mediaSessionEvent));
+            Communicator_CommandReceived(this, new MediaSessionEventArgs(mediaSessionEvent));
         }
         catch (Exception ex)
         {
             Trace.WriteLine($"Error: {ex.Message}");
         }
     }
-
 
     public async Task BroadcastImage(byte[] imageData)
     {
@@ -140,4 +145,71 @@ public class SocketController
                 _clients.RemoveAt(i);
         }
     }
+
+    private async void Communicator_CommandReceived(object sender, MediaSessionEventArgs e)
+    {
+        var currentMediaSession = MediaSessionHandler.GetCurrentMediaSession();
+
+        if (currentMediaSession == null)
+        {
+            Trace.WriteLine("Current session is null!");
+            return;
+        }
+
+        try
+        {
+            switch (e.MediaSessionEvent.EventType)
+            {
+                case EventType.Play:
+                case EventType.Pause:
+
+                    var controlsInfo = currentMediaSession?.ControlSession.GetPlaybackInfo()?.Controls;
+
+                    if (controlsInfo?.IsPauseEnabled == true)
+                        await currentMediaSession?.ControlSession?.TryPauseAsync();
+                    else if (controlsInfo?.IsPlayEnabled == true)
+                        await currentMediaSession?.ControlSession?.TryPlayAsync();
+
+                    break;
+
+                case EventType.Previous:
+                    await currentMediaSession?.ControlSession?.TrySkipPreviousAsync();
+                    break;
+
+                case EventType.Next:
+                    await currentMediaSession?.ControlSession?.TrySkipNextAsync();
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine($"Error: {ex}");
+        }
+    }
+
+    public async Task DistributeJsonAsync(object jsonObject)
+    {
+        var jsonString = JsonConvert.SerializeObject(jsonObject);
+
+        var jsonStringHash = jsonString.GetHashCode();
+        if (_lastMessageHash == jsonStringHash) return;
+
+        await BroadcastMessage(jsonString);
+
+        _lastMessageHash = jsonStringHash;
+    }
+
+    public async Task DistributeImageAsync(byte[] imageData)
+    {
+        var imageDataHash = imageData.GetHashCode();
+        if (_lastImageHash == imageDataHash) return;
+
+        await BroadcastImage(imageData);
+
+        _lastImageHash = imageDataHash;
+    }
+
 }

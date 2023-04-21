@@ -3,24 +3,20 @@ using System.Runtime.CompilerServices;
 
 namespace WPF_TestPlayground;
 
-public class MediaSessionModel : INotifyPropertyChanged
+public class MediaInfo : INotifyPropertyChanged
 {
+    private int _mediaSessionId;
     private string _artist = "";
-
-    private int _id;
     private string _mediaSessionName = "";
     private string _playbackStatus = "";
     private string _songName = "";
-
-    public string Information =>
-        $"Status of [{SongName}] by [{Artist}] on [{MediaSessionName}], [{Id}] - [{PlaybackStatus}]";
-
-    public int Id
+    
+    public int MediaSessionId
     {
-        get => _id;
+        get => _mediaSessionId;
         set
         {
-            _id = value;
+            _mediaSessionId = value;
             OnPropertyChanged();
         }
     }
@@ -70,7 +66,5 @@ public class MediaSessionModel : INotifyPropertyChanged
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-
-        if (propertyName != nameof(Information)) OnPropertyChanged(nameof(Information));
     }
 }

@@ -1,81 +1,226 @@
-﻿using System.Collections.ObjectModel;
-using System.Linq;
-using System.Windows;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using Windows.Media.Control;
+using WindowsMediaController;
 using static WindowsMediaController.MediaManager;
 
 namespace WPF_TestPlayground;
 
 public class MediaSessionHandler
 {
-    private readonly ObservableCollection<MediaSessionModel> _mediaSessionModelList;
+    private readonly MediaManager MediaManager;
+    private static MediaSession? _currentMediaSession;
 
-    public MediaSessionHandler(ObservableCollection<MediaSessionModel> mediaSessionModelList)
+    private int _currentSessionId;
+
+    public MediaSessionHandler(MediaManager mediaManager)
     {
-        _mediaSessionModelList = mediaSessionModelList;
+        MediaManager = mediaManager;
+        MediaSessionInfos = new Dictionary<int, MediaInfo>();
+
+        MediaManager.OnAnySessionOpened += MediaManager_OnAnySessionOpened;
+        MediaManager.OnAnySessionClosed += MediaManager_OnAnySessionClosed;
+        MediaManager.OnFocusedSessionChanged += MediaManager_OnFocusedSessionChanged;
+        MediaManager.OnAnyPlaybackStateChanged += MediaManager_OnAnyPlaybackStateChanged;
+        MediaManager.OnAnyMediaPropertyChanged += MediaManager_OnAnyMediaPropertyChanged;
     }
 
-    //public void GetCurrentSession
-    //return mediaSession
+    public Dictionary<int, MediaInfo> MediaSessionInfos { get; }
+    public event EventHandler<MediaSessionEventArgs> MediaPropertiesChanged;
+    public event EventHandler<MediaSessionEventArgs> PlaybackStateChanged;
+    public event EventHandler<MediaSessionEventArgs> FocusedSessionChanged;
+    public event EventHandler<MediaSessionEventArgs> MediaSessionClosed;
+    public event EventHandler<MediaSessionEventArgs> MediaSessionOpened;
 
-    public void AddSession(MediaSession mediaSession)
+    private async void MediaManager_OnAnySessionOpened(MediaSession session)
     {
-        if (mediaSession == null)
+        Trace.WriteLine("MediaManager_OnAnySessionOpened called");
+
+        if (session == null)
             return;
 
-        Application.Current.Dispatcher.Invoke(() =>
+        try
         {
-            _mediaSessionModelList.Add(new MediaSessionModel
+            var mediaInfo = new MediaInfo
             {
-                Id = mediaSession.GetHashCode(),
-                MediaSessionName = mediaSession.Id
-            });
-        });
-    }
+                MediaSessionId = session.GetHashCode(),
+                MediaSessionName = session.Id
+            };
 
-    public void RemoveMediaSession(MediaSession mediaSession)
-    {
-        if (mediaSession == null)
-            return;
+            _currentSessionId = session.GetHashCode();
+            _currentMediaSession = session;
+            MediaSessionInfos[_currentSessionId] = mediaInfo;
 
-        Application.Current.Dispatcher.Invoke(() =>
+            MediaSessionOpened?.Invoke(this, new MediaSessionEventArgs(new MediaSessionEvent
+            {
+                EventType = EventType.NewSession,
+                MediaSessionId = _currentSessionId
+            }));
+        }
+        catch (Exception ex)
         {
-            for (var i = 0; i < _mediaSessionModelList.Count; i++)
-                if (_mediaSessionModelList[i].Id == mediaSession.GetHashCode())
-                    _mediaSessionModelList.Remove(_mediaSessionModelList[i]);
-        });
+            Trace.Write($"Exception caught at MediaManager_OnAnySessionOpened: {ex.Message}");
+        }
     }
 
-    public void UpdatePlaybackState(MediaSession mediaSession,
+    private async void MediaManager_OnAnySessionClosed(MediaSession session)
+    {
+        Trace.WriteLine("MediaManager_OnAnySessionClosed called");
+
+        try
+        {
+            var mediaSession = GetMediaInfo(session.GetHashCode());
+
+            if (mediaSession == null)
+            {
+                Trace.WriteLine($"MediaSession not found in MediaSessionInfos.");
+            }
+
+            MediaSessionInfos.Remove(mediaSession.GetHashCode());
+
+            MediaSessionClosed?.Invoke(this, new MediaSessionEventArgs(new MediaSessionEvent
+            {
+                EventType = EventType.CloseSession,
+                MediaSessionId = mediaSession.MediaSessionId,
+                Artist = mediaSession.Artist,
+                MediaSessionName = mediaSession.MediaSessionName,
+                PlaybackStatus = mediaSession.PlaybackStatus,
+                SongName = mediaSession.SongName
+            }));
+        }
+        catch (Exception ex)
+        {
+            Trace.Write($"Exception caught at MediaManager_OnAnySessionClosed: {ex.Message}");
+        }
+    }
+
+    private async void MediaManager_OnFocusedSessionChanged(MediaSession session)
+    {
+        Trace.WriteLine("MediaManager_OnFocusedSessionChanged called");
+
+        try
+        {
+            if (session == null) return;
+
+            var mediaSession = GetMediaInfo(session.GetHashCode());
+
+            if (mediaSession == null)
+            {
+                Trace.WriteLine($"MediaSession not found in MediaSessionInfos.");
+            }
+
+            _currentSessionId = mediaSession.MediaSessionId;
+            _currentMediaSession = session;
+
+            FocusedSessionChanged?.Invoke(this, new MediaSessionEventArgs(new MediaSessionEvent
+            {
+                EventType = EventType.SessionFocusChanged,
+                MediaSessionId = mediaSession.MediaSessionId,
+                Artist = mediaSession.Artist,
+                MediaSessionName = mediaSession.MediaSessionName,
+                PlaybackStatus = mediaSession.PlaybackStatus,
+                SongName = mediaSession.SongName
+            }));
+
+        }
+        catch (Exception ex)
+        {
+            Trace.Write($"Exception caught at MediaManager_OnFocusedSessionChanged: {ex.Message}");
+        }
+    }
+
+    private async void MediaManager_OnAnyPlaybackStateChanged(MediaSession session,
         GlobalSystemMediaTransportControlsSessionPlaybackInfo args)
     {
-        if (mediaSession == null || args == null)
-            return;
+        Trace.WriteLine("MediaManager_OnAnyPlaybackStateChanged called");
 
-        var _mediaSession = FindMediaSession(mediaSession);
+        try
+        {
+            var mediaSession = GetMediaInfo(session.GetHashCode());
 
-        if (_mediaSession == null)
-            return;
+            if (mediaSession == null)
+            {
+                Trace.WriteLine($"MediaSession not found in MediaSessionInfos.");
+            }
 
-        _mediaSession.PlaybackStatus = args.PlaybackStatus.ToString();
+            mediaSession.PlaybackStatus = args.PlaybackStatus == null ? "Playing" : args.PlaybackStatus.ToString();
+            MediaSessionInfos[mediaSession.MediaSessionId] = mediaSession;
+
+            var currentPlaybackPosition = MediaManager.GetPlaybackPosition();
+
+            PlaybackStateChanged?.Invoke(this, new MediaSessionEventArgs(new MediaSessionEvent
+            {
+                EventType = EventType.PlaybackStatusChanged,
+                MediaSessionId = mediaSession.MediaSessionId,
+                Artist = mediaSession.Artist,
+                MediaSessionName = mediaSession.MediaSessionName,
+                PlaybackStatus = mediaSession.PlaybackStatus,
+                SongName = mediaSession.SongName
+            }));
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine($"Exception caught at MediaManager_OnAnyPlaybackStateChanged: {ex.Message}");
+        }
     }
 
-    public void UpdateMediaProperty(MediaSession mediaSession,
+    private async void MediaManager_OnAnyMediaPropertyChanged(MediaSession session,
         GlobalSystemMediaTransportControlsSessionMediaProperties args)
     {
-        if (mediaSession == null || args == null) return;
+        Trace.WriteLine("MediaManager_OnAnyMediaPropertyChanged called");
 
-        var _mediaSession = FindMediaSession(mediaSession);
+        try
+        {
+            var mediaSession = GetMediaInfo(session.GetHashCode());
 
-        if (_mediaSession == null)
-            return;
+            if (mediaSession == null)
+            {
+                Trace.WriteLine($"MediaSession not found in MediaSessionInfos.");
+            }
 
-        _mediaSession.Artist = args.Artist;
-        _mediaSession.SongName = args.Title;
+            mediaSession.MediaSessionName = session.Id;
+            mediaSession.Artist = args.Artist;
+            mediaSession.SongName = args.Title;
+            mediaSession.PlaybackStatus = session?.ControlSession?.GetPlaybackInfo()?.PlaybackStatus.ToString();
+
+            MediaSessionInfos[mediaSession.MediaSessionId] = mediaSession;
+
+            MediaPropertiesChanged?.Invoke(this, new MediaSessionEventArgs(new MediaSessionEvent
+            {
+                EventType = EventType.SongChanged,
+                MediaSessionId = mediaSession.MediaSessionId,
+                Artist = mediaSession.Artist,
+                MediaSessionName = mediaSession.MediaSessionName,
+                PlaybackStatus = mediaSession.PlaybackStatus,
+                SongName = mediaSession.SongName
+            }));
+
+            //var songInfo = sender.ControlSession?.TryGetMediaPropertiesAsync()?.GetAwaiter().GetResult();
+
+            //BroadcastThumbnail(songInfo?.Thumbnail);
+            //BroadcastThumbnail(args.Thumbnail);
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine($"Exception caught at MediaManager_OnAnyMediaPropertyChanged: {ex.Message}");
+        }
     }
 
-    private MediaSessionModel? FindMediaSession(MediaSession mediaSession)
+    public MediaInfo? GetMediaInfo(int mediaSessionId)
     {
-        return _mediaSessionModelList?.Where(x => x.Id == mediaSession.GetHashCode()).FirstOrDefault() ?? null;
+        MediaSessionInfos.TryGetValue(_currentSessionId, out var mediaInfo);
+        return mediaInfo;
+    }
+
+    public MediaInfo? GetCurrentMediaInfo()
+    {
+        MediaSessionInfos.TryGetValue(_currentSessionId, out var mediaInfo);
+        return mediaInfo;
+    }
+
+    public static MediaSession GetCurrentMediaSession()
+    {
+        return _currentMediaSession;
     }
 }

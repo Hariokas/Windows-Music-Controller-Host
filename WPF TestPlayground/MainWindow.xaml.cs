@@ -1,201 +1,79 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.IO;
 using System.Windows;
-using System.Windows.Media.Imaging;
-using Windows.Media.Control;
+using Windows.Graphics.Imaging;
 using Windows.Storage.Streams;
 using WindowsMediaController;
 using static WindowsMediaController.MediaManager;
 
 namespace WPF_TestPlayground;
 
-/// <summary>
-///     Interaction logic for MainWindow.xaml
-/// </summary>
 public partial class MainWindow : Window
 {
     private static readonly MediaManager MediaManager = new();
-    private static MediaSession? _currentSession;
+    private static SocketController _communicator;
     private static MediaSessionHandler _mediaSessionHandler;
-    private static WebSocketCommunicator _communicator;
 
-    private static List<MediaSessionModel> _mediaSessions;
-
-    //private static readonly SerialCommunicator SerialCommunicator = SerialCommunicator.Instance;
+    public static ObservableCollection<SongInfoModel>? SongList { get; set; }
+    public static ObservableCollection<MediaInfo>? MediaSessionModelList { get; set; }
 
     public MainWindow()
     {
         InitializeComponent();
 
-        MediaManager.OnAnySessionOpened += MediaManager_OnAnySessionOpened;
-        MediaManager.OnAnySessionClosed += MediaManager_OnAnySessionClosed;
-        MediaManager.OnFocusedSessionChanged += MediaManager_OnFocusedSessionChanged;
-        MediaManager.OnAnyPlaybackStateChanged += MediaManager_OnAnyPlaybackStateChanged;
-        MediaManager.OnAnyMediaPropertyChanged += MediaManager_OnAnyMediaPropertyChanged;
-
-        //SerialCommunicator.MessageReceived += SerialCommunicator_MessageReceived;
-
         SongList = new ObservableCollection<SongInfoModel>();
-        MediaSessionModelList = new ObservableCollection<MediaSessionModel>();
+        MediaSessionModelList = new ObservableCollection<MediaInfo>();
 
-        _mediaSessionHandler = new MediaSessionHandler(MediaSessionModelList);
+        _communicator = new SocketController("192.168.0.107", "8080", MediaManager);
 
-        _mediaSessions = new List<MediaSessionModel>();
+        _mediaSessionHandler = new MediaSessionHandler(MediaManager);
 
-        _communicator = new WebSocketCommunicator("192.168.0.107", "8080");
-        _communicator.CommandReceived += Communicator_CommandReceived;
-
+        _mediaSessionHandler.MediaPropertiesChanged += MediaSessionHandler_MediaPropertiesChanged;
+        _mediaSessionHandler.PlaybackStateChanged += MediaSessionHandler_PlaybackStateChanged;
+        _mediaSessionHandler.FocusedSessionChanged += MediaSessionHandler_FocusedSessionChanged;
+        _mediaSessionHandler.MediaSessionClosed += MediaSessionHandler_MediaSessionClosed;
+        _mediaSessionHandler.MediaSessionOpened += MediaSessionHandler_MediaSessionOpened;
 
         DataContext = this;
         MediaManager.Start();
     }
-
-    public static ObservableCollection<SongInfoModel>? SongList { get; set; }
-    public static ObservableCollection<MediaSessionModel>? MediaSessionModelList { get; set; }
-
-    private static async void MediaManager_OnAnySessionOpened(MediaSession session)
+    
+    private async void MediaSessionHandler_MediaSessionOpened(object? sender, MediaSessionEventArgs e)
     {
-        Trace.WriteLine("MediaManager_OnAnySessionOpened called");
-        if (session == null)
-            return;
-
-        _currentSession = session;
-
-        WriteLineColor($"-- New Source: {session.Id}: {session.GetHashCode()}", ConsoleColor.Green);
-
-        var newSessionEvent = new MediaSessionEvent
-        {
-            EventType = EventType.NewSession,
-            MediaSessionId = session.GetHashCode(),
-            MediaSessionName = session.Id
-        };
-
-        await _communicator.DistributeJsonAsync(newSessionEvent);
-
-        _mediaSessionHandler.AddSession(session);
+        await _communicator.DistributeJsonAsync(e.MediaSessionEvent);
+        WriteLineColor($"New session: [{e.MediaSessionEvent.MediaSessionId}] - [{e.MediaSessionEvent.MediaSessionName}]");
     }
 
-    private static async void MediaManager_OnAnySessionClosed(MediaSession session)
+    private async void MediaSessionHandler_MediaSessionClosed(object? sender, MediaSessionEventArgs e)
     {
-        Trace.WriteLine("MediaManager_OnAnySessionClosed called");
-
-        if (session == null)
-            return;
-
-        WriteLineColor($"-- Removed Source: {session.Id}: {session.GetHashCode()}", ConsoleColor.Red);
-
-        var closedSessionEvent = new MediaSessionEvent
-        {
-            EventType = EventType.CloseSession,
-            MediaSessionId = session.GetHashCode(),
-            MediaSessionName = session.Id
-        };
-
-        await _communicator.DistributeJsonAsync(closedSessionEvent);
-
-        _mediaSessionHandler.RemoveMediaSession(session);
+        await _communicator.DistributeJsonAsync(e.MediaSessionEvent);
+        WriteLineColor($"Session closed: [{e.MediaSessionEvent.MediaSessionId}] - [{e.MediaSessionEvent.MediaSessionName}]");
     }
 
-    private static async void MediaManager_OnFocusedSessionChanged(MediaSession mediaSession)
+    private async void MediaSessionHandler_FocusedSessionChanged(object? sender, MediaSessionEventArgs e)
     {
-        Trace.WriteLine("MediaManager_OnFocusedSessionChanged called");
-
-        if (mediaSession == null)
-            return;
-
-        _currentSession = mediaSession;
-
-        WriteLineColor("== Session Focus Changed: " + mediaSession?.ControlSession?.SourceAppUserModelId,
-            ConsoleColor.Gray);
-
-        var focusedSessionChangedEvent = new MediaSessionEvent
-        {
-            EventType = EventType.SessionFocusChanged,
-            MediaSessionId = mediaSession.GetHashCode(),
-            MediaSessionName = mediaSession.Id
-        };
-
-        await _communicator.DistributeJsonAsync(focusedSessionChangedEvent);
+        await _communicator.DistributeJsonAsync(e.MediaSessionEvent);
+        WriteLineColor($"Focused session changed to: [{e.MediaSessionEvent.MediaSessionId}] - [{e.MediaSessionEvent.MediaSessionName}]");
     }
 
-    private static async void MediaManager_OnAnyPlaybackStateChanged(MediaSession sender,
-        GlobalSystemMediaTransportControlsSessionPlaybackInfo args)
+    private async void MediaSessionHandler_MediaPropertiesChanged(object sender, MediaSessionEventArgs e)
     {
-        Trace.WriteLine("MediaManager_OnAnyPlaybackStateChanged called");
-
-        if (sender == null || args == null)
-            return;
-        try
-        {
-            WriteLineColor($"{sender.Id}: {sender.GetHashCode()} is now {args.PlaybackStatus}", ConsoleColor.Yellow);
-
-            var sessionPlaybackStateChangedEvent = new MediaSessionEvent
-            {
-                EventType = EventType.PlaybackStatusChanged,
-                MediaSessionId = sender.GetHashCode(),
-                MediaSessionName = sender.Id,
-                PlaybackStatus = args.PlaybackStatus.ToString()
-            };
-
-            var currentPlaybackPosition = MediaManager.GetPlaybackPosition();
-
-            await _communicator.DistributeJsonAsync(sessionPlaybackStateChangedEvent);
-
-            _mediaSessionHandler.UpdatePlaybackState(sender, args);
-        }
-        catch (Exception ex)
-        {
-            Trace.WriteLine($"Exception caught at MediaManager_OnAnyPlaybackStateChanged: {ex.Message}");
-        }
+        await _communicator.DistributeJsonAsync(e.MediaSessionEvent);
+        WriteLineColor($"Media properties changed for: [{e.MediaSessionEvent.MediaSessionId}] - [{e.MediaSessionEvent.MediaSessionName}]");
+        WriteLineColor($"Properties: [{e.MediaSessionEvent.Artist}] - [{e.MediaSessionEvent.SongName}] [{e.MediaSessionEvent.PlaybackStatus}]");
     }
 
-    private static async void MediaManager_OnAnyMediaPropertyChanged(MediaSession sender,
-        GlobalSystemMediaTransportControlsSessionMediaProperties args)
+    private async void MediaSessionHandler_PlaybackStateChanged(object sender, MediaSessionEventArgs e)
     {
-        Trace.WriteLine("MediaManager_OnAnyMediaPropertyChanged called");
-
-        if (sender == null || args == null)
-            return;
-        try
-        {
-            WriteLineColor(
-                $"{sender.Id} is now playing {args.Title} {(string.IsNullOrEmpty(args.Artist) ? "" : $"by {args.Artist}")}",
-                ConsoleColor.Cyan);
-
-            var sessionMediaPropertyChangedEvent = new MediaSessionEvent
-            {
-                EventType = EventType.SongChanged,
-                MediaSessionId = sender.GetHashCode(),
-                MediaSessionName = sender.Id,
-                Artist = args.Artist,
-                SongName = args.Title,
-                PlaybackStatus = _currentSession?.ControlSession.GetPlaybackInfo()?.PlaybackStatus.ToString()
-            };
-
-            await _communicator.DistributeJsonAsync(sessionMediaPropertyChangedEvent);
-            var songInfo = sender.ControlSession?.TryGetMediaPropertiesAsync()?.GetAwaiter().GetResult();
-            BroadcastThumbnail(songInfo?.Thumbnail);
-            BroadcastThumbnail(args.Thumbnail);
-
-            _mediaSessionHandler.UpdateMediaProperty(sender, args);
-        }
-        catch (Exception ex)
-        {
-            Trace.WriteLine($"Exception caught at MediaManager_OnAnyMediaPropertyChanged: {ex.Message}");
-        }
+        await _communicator.DistributeJsonAsync(e.MediaSessionEvent);
+        WriteLineColor($"Playback status changed for: [{e.MediaSessionEvent.MediaSessionId}] - [{e.MediaSessionEvent.MediaSessionName}]; Playback status: [{e.MediaSessionEvent.PlaybackStatus}] [{e.MediaSessionEvent.Artist}] - [{e.MediaSessionEvent.SongName}]");
     }
 
     private static void BroadcastThumbnail(IRandomAccessStreamReference thumbnail)
     {
         if (thumbnail == null) return;
 
-        var thumbnailAsByteArray = NotHelper.GetThumbnailAsByteArray(thumbnail);
-
-        if (thumbnailAsByteArray != null)
-            _ = _communicator.DistributeImageAsync(thumbnailAsByteArray);
+        var thumbnailAsByteArray = NotHelper.GetThumbnailAsByteArray(thumbnail, 4);
     }
 
     public static void WriteLineColor(object toPrint, ConsoleColor color = ConsoleColor.White)
@@ -204,48 +82,6 @@ public partial class MainWindow : Window
         {
             SongList?.Add(new SongInfoModel { FirstLine = $"{DateTime.Now:HH:mm:ss.fff} {toPrint}" });
         });
-    }
-
-    private async void Communicator_CommandReceived(object sender, MediaSessionEventArgs e)
-    {
-        if (_currentSession == null)
-        {
-            Trace.WriteLine("Current session is null!");
-            return;
-        }
-
-        try
-        {
-            switch (e.MediaSessionEvent.EventType)
-            {
-                case EventType.Play:
-                case EventType.Pause:
-
-                    var controlsInfo = _currentSession?.ControlSession.GetPlaybackInfo()?.Controls;
-
-                    if (controlsInfo?.IsPauseEnabled == true)
-                        await _currentSession?.ControlSession?.TryPauseAsync();
-                    else if (controlsInfo?.IsPlayEnabled == true)
-                        await _currentSession?.ControlSession?.TryPlayAsync();
-
-                    break;
-
-                case EventType.Previous:
-                    await _currentSession?.ControlSession?.TrySkipPreviousAsync();
-                    break;
-
-                case EventType.Next:
-                    await _currentSession?.ControlSession?.TrySkipNextAsync();
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-        catch (Exception ex)
-        {
-            Trace.WriteLine($"Error: {ex}");
-        }
     }
 }
 
@@ -257,45 +93,68 @@ public class SongInfoModel
 
 internal static class NotHelper
 {
-    public static byte[]? GetThumbnailAsByteArray(IRandomAccessStreamReference thumbnail)
+    public static byte[]? GetThumbnailAsByteArray(IRandomAccessStreamReference thumbnail, uint upscaleModifier)
     {
         if (thumbnail == null)
             return null;
 
         var imageStream = thumbnail.OpenReadAsync().GetAwaiter().GetResult();
-        var fileBytes = new byte[imageStream.Size];
-        using (var reader = new DataReader(imageStream))
+        var decoder = BitmapDecoder.CreateAsync(imageStream).GetAwaiter().GetResult();
+
+        //Calculate new width and height while keeping the original aspect ration
+        var originalWidth = decoder.PixelWidth;
+        var originalHeight = decoder.PixelHeight;
+        uint newWidth, newHeight;
+
+        newWidth = (uint)((double)originalWidth * upscaleModifier);
+        newHeight = (uint)((double)originalHeight * upscaleModifier);
+
+        // Create a new BitmapTransformer and set the desired size
+        var transformer = new BitmapTransform
         {
-            reader.LoadAsync((uint)imageStream.Size).GetAwaiter().GetResult();
-            reader.ReadBytes(fileBytes);
-        }
+            ScaledWidth = newWidth,
+            ScaledHeight = newHeight,
+            InterpolationMode = BitmapInterpolationMode.Fant
+        };
 
-        return fileBytes;
-    }
+        // Apply the transform
+        var resizedPixelData = decoder.GetPixelDataAsync(
+            BitmapPixelFormat.Bgra8,
+            BitmapAlphaMode.Premultiplied,
+            transformer,
+            ExifOrientationMode.RespectExifOrientation,
+            ColorManagementMode.DoNotColorManage
+        ).GetAwaiter().GetResult();
 
-    internal static BitmapImage? GetThumbnail(IRandomAccessStreamReference Thumbnail)
-    {
-        if (Thumbnail == null)
-            return null;
-
-        var imageStream = Thumbnail.OpenReadAsync().GetAwaiter().GetResult();
-        var fileBytes = new byte[imageStream.Size];
-        using (var reader = new DataReader(imageStream))
+        // Create a new InMemoryRandomAccessStream to store the resized image
+        using (var resizedImageStream = new InMemoryRandomAccessStream())
         {
-            reader.LoadAsync((uint)imageStream.Size).GetAwaiter().GetResult();
-            reader.ReadBytes(fileBytes);
-        }
+            // Create a BitmapEncoder and set the resized pixel data
+            var encoder = BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, resizedImageStream).GetAwaiter()
+                .GetResult();
+            encoder.SetPixelData(
+                BitmapPixelFormat.Bgra8,
+                BitmapAlphaMode.Premultiplied,
+                newWidth,
+                newHeight,
+                decoder.DpiX,
+                decoder.DpiY,
+                resizedPixelData.DetachPixelData()
+            );
 
-        var image = new BitmapImage();
-        using (var ms = new MemoryStream(fileBytes))
-        {
-            image.BeginInit();
-            image.CacheOption = BitmapCacheOption.OnLoad;
-            image.StreamSource = ms;
-            image.EndInit();
-        }
+            // Flush the encoder and return the resized image as a byte array
+            encoder.FlushAsync().GetAwaiter().GetResult();
 
-        return image;
+            var resizedImageBytes = new byte[resizedImageStream.Size];
+
+            using (var reader = new DataReader(resizedImageStream))
+            {
+                reader.LoadAsync((uint)resizedImageStream.Size).GetAwaiter().GetResult();
+                reader.ReadBytes(resizedImageBytes);
+            }
+
+            return resizedImageBytes;
+        }
     }
 }
 
@@ -307,7 +166,7 @@ internal static class NotHelper
 //    {
 //        var menuItem = new NavigationViewItem
 //        {
-//            Content = mediaSession.Id,
+//            Content = mediaSession.MediaSessionId,
 //            Icon = new SymbolIcon() { Symbol = Symbol.Audio },
 //            Tag = mediaSession
 //        };
@@ -322,7 +181,7 @@ internal static class NotHelper
 //        NavigationViewItem? itemToRemove = null;
 
 //        foreach (NavigationViewItem? item in SongList.MenuItems)
-//            if (((MediaSession?)item?.Tag)?.ToString() == session.Id)
+//            if (((MediaSession?)item?.Tag)?.ToString() == session.MediaSessionId)
 //                itemToRemove = item;
 
 //        if (itemToRemove != null)
@@ -338,8 +197,8 @@ internal static class NotHelper
 //        {
 //            if (item != null)
 //            {
-//                //item.Content = (((MediaSession?)item?.Tag)?.Id == session?.Id ? "# " : "") + ((MediaSession?)item?.Tag)?.Id;
-//                item.Content = ((MediaSession?)item?.Tag)?.Id;
+//                //item.Content = (((MediaSession?)item?.Tag)?.MediaSessionId == session?.MediaSessionId ? "# " : "") + ((MediaSession?)item?.Tag)?.MediaSessionId;
+//                item.Content = ((MediaSession?)item?.Tag)?.MediaSessionId;
 //            }
 //        }
 //    });
