@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace WPF_TestPlayground;
+namespace WPF_TestPlayground.EventClasses;
 
 public class MediaSessionEventArgs : EventArgs
 {

@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace WPF_TestPlayground;
+namespace WPF_TestPlayground.Models;
 
 public class MediaInfo : INotifyPropertyChanged
 {
@@ -10,7 +10,7 @@ public class MediaInfo : INotifyPropertyChanged
     private string _mediaSessionName = "";
     private string _playbackStatus = "";
     private string _songName = "";
-    
+
     public int MediaSessionId
     {
         get => _mediaSessionId;

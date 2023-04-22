@@ -10,6 +10,8 @@
 
   <ItemGroup>
     <PackageReference Include="ModernWpfUI" Version="0.9.6" />
+    <PackageReference Include="NAudio" Version="2.1.0" />
+    <PackageReference Include="NAudio.Core" Version="2.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="System.IO.Ports" Version="7.0.0" />
   </ItemGroup>

@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Windows.Media.Control;
 
-namespace WindowsMediaController;
+namespace WPF_TestPlayground.Controllers;
 
 public class MediaManager : IDisposable
 {

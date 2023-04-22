@@ -1,6 +1,6 @@
-﻿namespace WPF_TestPlayground;
+﻿namespace WPF_TestPlayground.EventClasses;
 
-public enum EventType
+public enum MediaSessionEventType
 {
     NewSession,
     CloseSession,
@@ -13,9 +13,14 @@ public enum EventType
     Next
 }
 
-public class MediaSessionEvent
+public class MediaSessionEvent : BaseEvent
 {
-    public EventType EventType { get; set; }
+    public MediaSessionEvent()
+    {
+        EventType = BaseEventType.MediaSessionEvent;
+    }
+
+    public MediaSessionEventType MediaSessionEventType { get; set; }
     public int MediaSessionId { get; set; }
     public string MediaSessionName { get; set; }
     public string Artist { get; set; }

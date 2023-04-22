@@ -7,9 +7,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using WindowsMediaController;
+using WPF_TestPlayground.EventClasses;
 
-namespace WPF_TestPlayground;
+namespace WPF_TestPlayground.Controllers;
 
 public class SocketController
 {
@@ -19,7 +19,9 @@ public class SocketController
     private int _lastMessageHash;
     private int _lastImageHash;
 
-    public event EventHandler<MediaSessionEventArgs> CommandReceived;
+    public event EventHandler<MediaSessionEventArgs> MediaSessionCommandReceived;
+    public event EventHandler<MasterVolumeEventArgs> MasterVolumeCommandReceived;
+    public event EventHandler<VolumeMixerEventArgs> VolumeMixerCommandReceived;
 
     public SocketController(string serverIp, string port, MediaManager mediaManager)
     {
@@ -105,8 +107,32 @@ public class SocketController
         Trace.WriteLine($"Received message: {message}");
         try
         {
-            var mediaSessionEvent = JsonConvert.DeserializeObject<MediaSessionEvent>(message);
-            Communicator_CommandReceived(this, new MediaSessionEventArgs(mediaSessionEvent));
+            var baseEvent = JsonConvert.DeserializeObject<BaseEvent>(message);
+
+            switch (baseEvent.EventType)
+            {
+                case BaseEventType.MasterVolumeEvent:
+                    var masterVolumeEvent = JsonConvert.DeserializeObject<MasterVolumeEvent>(message) 
+                                            ?? throw new ArgumentNullException($"Failed to deserialize {nameof(MasterVolumeEvent)}");
+                    MasterVolumeCommandReceived?.Invoke(this, new MasterVolumeEventArgs(masterVolumeEvent));
+                    break;
+
+                case BaseEventType.MediaSessionEvent:
+                    var mediaSessionEvent = JsonConvert.DeserializeObject<MediaSessionEvent>(message) 
+                                            ?? throw new ArgumentNullException($"Failed to deserialize {nameof(MasterVolumeEvent)}");
+                    MediaSessionCommandReceived?.Invoke(this, new MediaSessionEventArgs(mediaSessionEvent));
+                    break;
+
+                case BaseEventType.VolumeMixerEvent:
+                    var volumeMixerEvent = JsonConvert.DeserializeObject<VolumeMixerEvent>(message) 
+                                           ?? throw new ArgumentNullException($"Failed to deserialize {nameof(MasterVolumeEvent)}");
+                    VolumeMixerCommandReceived?.Invoke(this, new VolumeMixerEventArgs(volumeMixerEvent));
+                    break;
+
+                default:
+                    Trace.WriteLine($"Unknown event type: {baseEvent.EventType}");
+                    break;
+            }
         }
         catch (Exception ex)
         {
@@ -143,50 +169,6 @@ public class SocketController
                 _ = client.SendAsync(segment, WebSocketMessageType.Text, true, CancellationToken.None);
             else
                 _clients.RemoveAt(i);
-        }
-    }
-
-    private async void Communicator_CommandReceived(object sender, MediaSessionEventArgs e)
-    {
-        var currentMediaSession = MediaSessionHandler.GetCurrentMediaSession();
-
-        if (currentMediaSession == null)
-        {
-            Trace.WriteLine("Current session is null!");
-            return;
-        }
-
-        try
-        {
-            switch (e.MediaSessionEvent.EventType)
-            {
-                case EventType.Play:
-                case EventType.Pause:
-
-                    var controlsInfo = currentMediaSession?.ControlSession.GetPlaybackInfo()?.Controls;
-
-                    if (controlsInfo?.IsPauseEnabled == true)
-                        await currentMediaSession?.ControlSession?.TryPauseAsync();
-                    else if (controlsInfo?.IsPlayEnabled == true)
-                        await currentMediaSession?.ControlSession?.TryPlayAsync();
-
-                    break;
-
-                case EventType.Previous:
-                    await currentMediaSession?.ControlSession?.TrySkipPreviousAsync();
-                    break;
-
-                case EventType.Next:
-                    await currentMediaSession?.ControlSession?.TrySkipNextAsync();
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-        catch (Exception ex)
-        {
-            Trace.WriteLine($"Error: {ex}");
         }
     }
 

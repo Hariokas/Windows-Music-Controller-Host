@@ -2,17 +2,19 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using Windows.Media.Control;
-using WindowsMediaController;
-using static WindowsMediaController.MediaManager;
+using WPF_TestPlayground.Controllers;
+using WPF_TestPlayground.EventClasses;
+using WPF_TestPlayground.Models;
+using static WPF_TestPlayground.Controllers.MediaManager;
 
-namespace WPF_TestPlayground;
+namespace WPF_TestPlayground.Handlers;
 
 public class MediaSessionHandler
 {
     private readonly MediaManager MediaManager;
     private static MediaSession? _currentMediaSession;
 
-    private int _currentSessionId;
+    private static int _currentSessionId;
 
     public MediaSessionHandler(MediaManager mediaManager)
     {
@@ -26,12 +28,13 @@ public class MediaSessionHandler
         MediaManager.OnAnyMediaPropertyChanged += MediaManager_OnAnyMediaPropertyChanged;
     }
 
-    public Dictionary<int, MediaInfo> MediaSessionInfos { get; }
+    public static Dictionary<int, MediaInfo> MediaSessionInfos { get; private set; }
     public event EventHandler<MediaSessionEventArgs> MediaPropertiesChanged;
     public event EventHandler<MediaSessionEventArgs> PlaybackStateChanged;
     public event EventHandler<MediaSessionEventArgs> FocusedSessionChanged;
     public event EventHandler<MediaSessionEventArgs> MediaSessionClosed;
     public event EventHandler<MediaSessionEventArgs> MediaSessionOpened;
+    public event EventHandler<ThumbnailEventArgs>? ThumbnailChanged;
 
     private async void MediaManager_OnAnySessionOpened(MediaSession session)
     {
@@ -54,7 +57,7 @@ public class MediaSessionHandler
 
             MediaSessionOpened?.Invoke(this, new MediaSessionEventArgs(new MediaSessionEvent
             {
-                EventType = EventType.NewSession,
+                MediaSessionEventType = MediaSessionEventType.NewSession,
                 MediaSessionId = _currentSessionId
             }));
         }
@@ -81,7 +84,7 @@ public class MediaSessionHandler
 
             MediaSessionClosed?.Invoke(this, new MediaSessionEventArgs(new MediaSessionEvent
             {
-                EventType = EventType.CloseSession,
+                MediaSessionEventType = MediaSessionEventType.CloseSession,
                 MediaSessionId = mediaSession.MediaSessionId,
                 Artist = mediaSession.Artist,
                 MediaSessionName = mediaSession.MediaSessionName,
@@ -115,7 +118,7 @@ public class MediaSessionHandler
 
             FocusedSessionChanged?.Invoke(this, new MediaSessionEventArgs(new MediaSessionEvent
             {
-                EventType = EventType.SessionFocusChanged,
+                MediaSessionEventType = MediaSessionEventType.SessionFocusChanged,
                 MediaSessionId = mediaSession.MediaSessionId,
                 Artist = mediaSession.Artist,
                 MediaSessionName = mediaSession.MediaSessionName,
@@ -151,7 +154,7 @@ public class MediaSessionHandler
 
             PlaybackStateChanged?.Invoke(this, new MediaSessionEventArgs(new MediaSessionEvent
             {
-                EventType = EventType.PlaybackStatusChanged,
+                MediaSessionEventType = MediaSessionEventType.PlaybackStatusChanged,
                 MediaSessionId = mediaSession.MediaSessionId,
                 Artist = mediaSession.Artist,
                 MediaSessionName = mediaSession.MediaSessionName,
@@ -188,7 +191,7 @@ public class MediaSessionHandler
 
             MediaPropertiesChanged?.Invoke(this, new MediaSessionEventArgs(new MediaSessionEvent
             {
-                EventType = EventType.SongChanged,
+                MediaSessionEventType = MediaSessionEventType.SongChanged,
                 MediaSessionId = mediaSession.MediaSessionId,
                 Artist = mediaSession.Artist,
                 MediaSessionName = mediaSession.MediaSessionName,
@@ -198,6 +201,9 @@ public class MediaSessionHandler
 
             //var songInfo = sender.ControlSession?.TryGetMediaPropertiesAsync()?.GetAwaiter().GetResult();
 
+            var thumbnail = args.Thumbnail;
+            var thumbnailData = ImageProcessor.GetThumbnailAsByteArray(thumbnail, 4);
+            if (thumbnailData != null) OnThumbnailChanged(thumbnailData);
             //BroadcastThumbnail(songInfo?.Thumbnail);
             //BroadcastThumbnail(args.Thumbnail);
         }
@@ -207,13 +213,62 @@ public class MediaSessionHandler
         }
     }
 
+    public async void MediaSessionCommandReceived(object sender, MediaSessionEventArgs e)
+    {
+        var currentMediaSession = MediaSessionHandler.GetCurrentMediaSession();
+
+        if (currentMediaSession == null)
+        {
+            Trace.WriteLine("Current session is null!");
+            return;
+        }
+
+        try
+        {
+            switch (e.MediaSessionEvent.MediaSessionEventType)
+            {
+                case MediaSessionEventType.Play:
+                case MediaSessionEventType.Pause:
+
+                    var controlsInfo = currentMediaSession?.ControlSession.GetPlaybackInfo()?.Controls;
+
+                    if (controlsInfo?.IsPauseEnabled == true)
+                        await currentMediaSession?.ControlSession?.TryPauseAsync();
+                    else if (controlsInfo?.IsPlayEnabled == true)
+                        await currentMediaSession?.ControlSession?.TryPlayAsync();
+
+                    break;
+
+                case MediaSessionEventType.Previous:
+                    await currentMediaSession?.ControlSession?.TrySkipPreviousAsync();
+                    break;
+
+                case MediaSessionEventType.Next:
+                    await currentMediaSession?.ControlSession?.TrySkipNextAsync();
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine($"Error: {ex}");
+        }
+    }
+
+    private async void OnThumbnailChanged(byte[] thumbnailData)
+    {
+        ThumbnailChanged?.Invoke(this, new ThumbnailEventArgs(thumbnailData));
+    }
+
     public MediaInfo? GetMediaInfo(int mediaSessionId)
     {
         MediaSessionInfos.TryGetValue(_currentSessionId, out var mediaInfo);
         return mediaInfo;
     }
 
-    public MediaInfo? GetCurrentMediaInfo()
+    public static MediaInfo? GetCurrentMediaInfo()
     {
         MediaSessionInfos.TryGetValue(_currentSessionId, out var mediaInfo);
         return mediaInfo;
@@ -222,5 +277,15 @@ public class MediaSessionHandler
     public static MediaSession GetCurrentMediaSession()
     {
         return _currentMediaSession;
+    }
+
+    public class ThumbnailEventArgs : EventArgs
+    {
+        public byte[] ThumbnailData { get; }
+
+        public ThumbnailEventArgs(byte[] thumbnailData)
+        {
+            ThumbnailData = thumbnailData;
+        }
     }
 }

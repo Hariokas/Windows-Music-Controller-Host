@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Windows;
 using Windows.Media.Control;
-using WindowsMediaController;
-using static WindowsMediaController.MediaManager;
+using WPF_TestPlayground.Controllers;
+using static WPF_TestPlayground.Controllers.MediaManager;
 
 namespace WPF_TestPlayground;
 

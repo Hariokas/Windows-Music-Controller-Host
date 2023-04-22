@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.Windows;
-using Windows.Graphics.Imaging;
 using Windows.Storage.Streams;
-using WindowsMediaController;
-using static WindowsMediaController.MediaManager;
+using WPF_TestPlayground.Controllers;
+using WPF_TestPlayground.EventClasses;
+using WPF_TestPlayground.Handlers;
+using WPF_TestPlayground.Models;
+using static WPF_TestPlayground.Controllers.MediaManager;
 
 namespace WPF_TestPlayground;
 
@@ -12,7 +14,10 @@ public partial class MainWindow : Window
 {
     private static readonly MediaManager MediaManager = new();
     private static SocketController _communicator;
+
     private static MediaSessionHandler _mediaSessionHandler;
+    private static MasterVolumeHandler _masterVolumeHandler;
+    private static VolumeMixerHandler _volumeMixerHandler;
 
     public static ObservableCollection<SongInfoModel>? SongList { get; set; }
     public static ObservableCollection<MediaInfo>? MediaSessionModelList { get; set; }
@@ -33,11 +38,43 @@ public partial class MainWindow : Window
         _mediaSessionHandler.FocusedSessionChanged += MediaSessionHandler_FocusedSessionChanged;
         _mediaSessionHandler.MediaSessionClosed += MediaSessionHandler_MediaSessionClosed;
         _mediaSessionHandler.MediaSessionOpened += MediaSessionHandler_MediaSessionOpened;
+        _mediaSessionHandler.ThumbnailChanged += MediaSessionHandler_ThumbnailChanged;
+
+        _communicator.MasterVolumeCommandReceived += Communicator_MasterVolumeCommandReceived;
+        _communicator.VolumeMixerCommandReceived += Communicator_VolumeMixerCommandReceived;
+        _communicator.MediaSessionCommandReceived += Communicator_MediaSessionCommandReceived;
+
+        _masterVolumeHandler.SendMessageRequested += MasterVolumeHandler_SendMessageRequested;
 
         DataContext = this;
         MediaManager.Start();
     }
-    
+
+    private async void MasterVolumeHandler_SendMessageRequested(object sender, MasterVolumeEventArgs e)
+    {
+        await _communicator.DistributeJsonAsync(e.MasterVolumeEvent);
+    }
+
+    private async void Communicator_MediaSessionCommandReceived(object? sender, MediaSessionEventArgs e)
+    {
+         _mediaSessionHandler.MediaSessionCommandReceived(sender, e);
+    }
+
+    private void Communicator_VolumeMixerCommandReceived(object? sender, VolumeMixerEventArgs e)
+    {
+        throw new NotImplementedException();
+    }
+
+    private void Communicator_MasterVolumeCommandReceived(object? sender, MasterVolumeEventArgs e)
+    {
+        _masterVolumeHandler.MasterVolumeCommandReceived(sender, e);
+    }
+
+    private async void MediaSessionHandler_ThumbnailChanged(object? sender, MediaSessionHandler.ThumbnailEventArgs e)
+    {
+        _ = _communicator.DistributeImageAsync(e.ThumbnailData);
+    }
+
     private async void MediaSessionHandler_MediaSessionOpened(object? sender, MediaSessionEventArgs e)
     {
         await _communicator.DistributeJsonAsync(e.MediaSessionEvent);
@@ -69,12 +106,7 @@ public partial class MainWindow : Window
         WriteLineColor($"Playback status changed for: [{e.MediaSessionEvent.MediaSessionId}] - [{e.MediaSessionEvent.MediaSessionName}]; Playback status: [{e.MediaSessionEvent.PlaybackStatus}] [{e.MediaSessionEvent.Artist}] - [{e.MediaSessionEvent.SongName}]");
     }
 
-    private static void BroadcastThumbnail(IRandomAccessStreamReference thumbnail)
-    {
-        if (thumbnail == null) return;
 
-        var thumbnailAsByteArray = NotHelper.GetThumbnailAsByteArray(thumbnail, 4);
-    }
 
     public static void WriteLineColor(object toPrint, ConsoleColor color = ConsoleColor.White)
     {
@@ -89,73 +121,6 @@ public class SongInfoModel
 {
     public string FirstLine { get; set; } = "";
     public string SecondLine { get; set; } = "";
-}
-
-internal static class NotHelper
-{
-    public static byte[]? GetThumbnailAsByteArray(IRandomAccessStreamReference thumbnail, uint upscaleModifier)
-    {
-        if (thumbnail == null)
-            return null;
-
-        var imageStream = thumbnail.OpenReadAsync().GetAwaiter().GetResult();
-        var decoder = BitmapDecoder.CreateAsync(imageStream).GetAwaiter().GetResult();
-
-        //Calculate new width and height while keeping the original aspect ration
-        var originalWidth = decoder.PixelWidth;
-        var originalHeight = decoder.PixelHeight;
-        uint newWidth, newHeight;
-
-        newWidth = (uint)((double)originalWidth * upscaleModifier);
-        newHeight = (uint)((double)originalHeight * upscaleModifier);
-
-        // Create a new BitmapTransformer and set the desired size
-        var transformer = new BitmapTransform
-        {
-            ScaledWidth = newWidth,
-            ScaledHeight = newHeight,
-            InterpolationMode = BitmapInterpolationMode.Fant
-        };
-
-        // Apply the transform
-        var resizedPixelData = decoder.GetPixelDataAsync(
-            BitmapPixelFormat.Bgra8,
-            BitmapAlphaMode.Premultiplied,
-            transformer,
-            ExifOrientationMode.RespectExifOrientation,
-            ColorManagementMode.DoNotColorManage
-        ).GetAwaiter().GetResult();
-
-        // Create a new InMemoryRandomAccessStream to store the resized image
-        using (var resizedImageStream = new InMemoryRandomAccessStream())
-        {
-            // Create a BitmapEncoder and set the resized pixel data
-            var encoder = BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, resizedImageStream).GetAwaiter()
-                .GetResult();
-            encoder.SetPixelData(
-                BitmapPixelFormat.Bgra8,
-                BitmapAlphaMode.Premultiplied,
-                newWidth,
-                newHeight,
-                decoder.DpiX,
-                decoder.DpiY,
-                resizedPixelData.DetachPixelData()
-            );
-
-            // Flush the encoder and return the resized image as a byte array
-            encoder.FlushAsync().GetAwaiter().GetResult();
-
-            var resizedImageBytes = new byte[resizedImageStream.Size];
-
-            using (var reader = new DataReader(resizedImageStream))
-            {
-                reader.LoadAsync((uint)resizedImageStream.Size).GetAwaiter().GetResult();
-                reader.ReadBytes(resizedImageBytes);
-            }
-
-            return resizedImageBytes;
-        }
-    }
 }
 
 #region Methods from previous project, just to see as examples of possible implementations
