@@ -174,6 +174,16 @@ public class MediaManager : IDisposable
         return currentMediaSession;
     }
 
+    public GlobalSystemMediaTransportControlsSessionTimelineProperties? GetTimelineProperties()
+    {
+        CheckStarted(false);
+
+        var currentSession = WindowsSessionManager.GetCurrentSession();
+        if (currentSession == null) return null;
+
+        return currentSession.GetTimelineProperties();
+    }
+
     public TimeSpan? GetPlaybackPosition()
     {
         CheckStarted(false);

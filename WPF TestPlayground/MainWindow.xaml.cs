@@ -32,6 +32,8 @@ public partial class MainWindow : Window
         _communicator = new SocketController("192.168.0.107", "8080", MediaManager);
 
         _mediaSessionHandler = new MediaSessionHandler(MediaManager);
+        _masterVolumeHandler = new MasterVolumeHandler();
+        _volumeMixerHandler = new VolumeMixerHandler();
 
         _mediaSessionHandler.MediaPropertiesChanged += MediaSessionHandler_MediaPropertiesChanged;
         _mediaSessionHandler.PlaybackStateChanged += MediaSessionHandler_PlaybackStateChanged;
@@ -45,9 +47,15 @@ public partial class MainWindow : Window
         _communicator.MediaSessionCommandReceived += Communicator_MediaSessionCommandReceived;
 
         _masterVolumeHandler.SendMessageRequested += MasterVolumeHandler_SendMessageRequested;
+        _volumeMixerHandler.SendMessageRequested += VolumeMixerHandler_SendMessageRequested;
 
         DataContext = this;
         MediaManager.Start();
+    }
+
+    private async void VolumeMixerHandler_SendMessageRequested(object? sender, VolumeMixerEventArgs e)
+    {
+        await _communicator.DistributeJsonAsync(e.VolumeMixerEvent);
     }
 
     private async void MasterVolumeHandler_SendMessageRequested(object sender, MasterVolumeEventArgs e)
@@ -62,7 +70,7 @@ public partial class MainWindow : Window
 
     private void Communicator_VolumeMixerCommandReceived(object? sender, VolumeMixerEventArgs e)
     {
-        throw new NotImplementedException();
+        _volumeMixerHandler.VolumeMixerCommandReceived(sender, e);
     }
 
     private void Communicator_MasterVolumeCommandReceived(object? sender, MasterVolumeEventArgs e)

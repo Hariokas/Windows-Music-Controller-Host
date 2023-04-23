@@ -1,4 +1,6 @@
-﻿namespace WPF_TestPlayground.EventClasses;
+﻿using System;
+
+namespace WPF_TestPlayground.EventClasses;
 
 public enum MediaSessionEventType
 {
@@ -21,6 +23,9 @@ public class MediaSessionEvent : BaseEvent
     }
 
     public MediaSessionEventType MediaSessionEventType { get; set; }
+    public TimeSpan SongLength { get; set; }
+    public TimeSpan CurrentPlaybackTime { get; set; }
+    public DateTime Timestamp { get; set; }
     public int MediaSessionId { get; set; }
     public string MediaSessionName { get; set; }
     public string Artist { get; set; }

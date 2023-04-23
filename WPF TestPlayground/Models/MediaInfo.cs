@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System;
 
 namespace WPF_TestPlayground.Models;
 
@@ -60,6 +61,9 @@ public class MediaInfo : INotifyPropertyChanged
             OnPropertyChanged();
         }
     }
+
+    public TimeSpan SongLength { get; set; }
+    public TimeSpan CurrentPlaybackTime { get; set; }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 

@@ -177,7 +177,7 @@ public class SocketController
         var jsonString = JsonConvert.SerializeObject(jsonObject);
 
         var jsonStringHash = jsonString.GetHashCode();
-        if (_lastMessageHash == jsonStringHash) return;
+        //if (_lastMessageHash == jsonStringHash) return;
 
         await BroadcastMessage(jsonString);
 
@@ -187,7 +187,7 @@ public class SocketController
     public async Task DistributeImageAsync(byte[] imageData)
     {
         var imageDataHash = imageData.GetHashCode();
-        if (_lastImageHash == imageDataHash) return;
+        //if (_lastImageHash == imageDataHash) return;
 
         await BroadcastImage(imageData);
 

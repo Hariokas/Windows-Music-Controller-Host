@@ -116,10 +116,18 @@ public class MediaSessionHandler
             _currentSessionId = mediaSession.MediaSessionId;
             _currentMediaSession = session;
 
+            var timelineProperties = MediaManager.GetTimelineProperties();
+            var timestamp = DateTime.UtcNow;
+
+            mediaSession.CurrentPlaybackTime = timelineProperties?.Position ?? TimeSpan.MaxValue;
+            mediaSession.SongLength = timelineProperties?.EndTime ?? TimeSpan.MaxValue;
+
             FocusedSessionChanged?.Invoke(this, new MediaSessionEventArgs(new MediaSessionEvent
             {
                 MediaSessionEventType = MediaSessionEventType.SessionFocusChanged,
                 MediaSessionId = mediaSession.MediaSessionId,
+                CurrentPlaybackTime = mediaSession.CurrentPlaybackTime,
+                SongLength = mediaSession.SongLength,
                 Artist = mediaSession.Artist,
                 MediaSessionName = mediaSession.MediaSessionName,
                 PlaybackStatus = mediaSession.PlaybackStatus,
@@ -147,14 +155,21 @@ public class MediaSessionHandler
                 Trace.WriteLine($"MediaSession not found in MediaSessionInfos.");
             }
 
+            var timelineProperties = MediaManager.GetTimelineProperties();
+            var timestamp = DateTime.UtcNow;
+
             mediaSession.PlaybackStatus = args.PlaybackStatus == null ? "Playing" : args.PlaybackStatus.ToString();
+            mediaSession.CurrentPlaybackTime = timelineProperties?.Position ?? TimeSpan.MaxValue;
+            mediaSession.SongLength = timelineProperties?.EndTime ?? TimeSpan.MaxValue;
+
             MediaSessionInfos[mediaSession.MediaSessionId] = mediaSession;
-
-            var currentPlaybackPosition = MediaManager.GetPlaybackPosition();
-
+            
             PlaybackStateChanged?.Invoke(this, new MediaSessionEventArgs(new MediaSessionEvent
             {
                 MediaSessionEventType = MediaSessionEventType.PlaybackStatusChanged,
+                CurrentPlaybackTime = mediaSession.CurrentPlaybackTime,
+                Timestamp = timestamp,
+                SongLength = mediaSession.SongLength,
                 MediaSessionId = mediaSession.MediaSessionId,
                 Artist = mediaSession.Artist,
                 MediaSessionName = mediaSession.MediaSessionName,
@@ -182,16 +197,25 @@ public class MediaSessionHandler
                 Trace.WriteLine($"MediaSession not found in MediaSessionInfos.");
             }
 
+            var timelineProperties = MediaManager.GetTimelineProperties();
+            var timestamp = DateTime.UtcNow;
+            
+            mediaSession.CurrentPlaybackTime = timelineProperties?.Position ?? TimeSpan.MaxValue;
+            mediaSession.SongLength = timelineProperties?.EndTime ?? TimeSpan.MaxValue;
             mediaSession.MediaSessionName = session.Id;
             mediaSession.Artist = args.Artist;
             mediaSession.SongName = args.Title;
             mediaSession.PlaybackStatus = session?.ControlSession?.GetPlaybackInfo()?.PlaybackStatus.ToString();
+
 
             MediaSessionInfos[mediaSession.MediaSessionId] = mediaSession;
 
             MediaPropertiesChanged?.Invoke(this, new MediaSessionEventArgs(new MediaSessionEvent
             {
                 MediaSessionEventType = MediaSessionEventType.SongChanged,
+                CurrentPlaybackTime = mediaSession.CurrentPlaybackTime,
+                Timestamp = timestamp,
+                SongLength = mediaSession.SongLength,
                 MediaSessionId = mediaSession.MediaSessionId,
                 Artist = mediaSession.Artist,
                 MediaSessionName = mediaSession.MediaSessionName,
@@ -230,7 +254,8 @@ public class MediaSessionHandler
                 case MediaSessionEventType.Play:
                 case MediaSessionEventType.Pause:
 
-                    var controlsInfo = currentMediaSession?.ControlSession.GetPlaybackInfo()?.Controls;
+                    var currentSession = MediaSessionHandler.GetCurrentMediaSession();
+                    var controlsInfo = currentSession?.ControlSession.GetPlaybackInfo()?.Controls;
 
                     if (controlsInfo?.IsPauseEnabled == true)
                         await currentMediaSession?.ControlSession?.TryPauseAsync();
