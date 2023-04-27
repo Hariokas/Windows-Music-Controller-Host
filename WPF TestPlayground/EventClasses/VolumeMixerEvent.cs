@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Windows.Documents;
 using WPF_TestPlayground.Models;
 
 namespace WPF_TestPlayground.EventClasses;
@@ -22,5 +21,4 @@ public class VolumeMixerEvent : BaseEvent
     public List<ApplicationVolume> ApplicationVolumes { get; set; }
 
     public ApplicationVolume ApplicationVolume { get; set; }
-
 }

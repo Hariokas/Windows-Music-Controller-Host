@@ -62,13 +62,13 @@ namespace WPF_TestPlayground.Controllers
                 using (var session = sessions[i])
                 {
                     var control = session;
-                    if ((int)control.GetProcessID == processId)
+
+                    if ((int)control.GetProcessID != processId) continue;
+
+                    using (var simpleVolume = session.SimpleAudioVolume)
                     {
-                        using (var simpleVolume = session.SimpleAudioVolume)
-                        {
-                            simpleVolume.Volume = volume;
-                            break;
-                        }
+                        simpleVolume.Volume = volume;
+                        break;
                     }
                 }
             }

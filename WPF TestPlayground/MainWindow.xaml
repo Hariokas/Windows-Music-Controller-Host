@@ -7,39 +7,6 @@
         Title="Windows Media Controller UI" Height="300" Width="850"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True">
-    <!--<Window.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ui:ColorPaletteResources Accent="#FF0078D7" />
-                <ResourceDictionary Source="pack://application:,,,/ModernWpf;component/ThemeResources/Dark.xaml" />
-                <ResourceDictionary Source="pack://application:,,,/ModernWpf;component/ControlsResources.xaml" />
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </Window.Resources>
-    <ui:NavigationView
-        x:Name="SongList" AutomationProperties.Name="SongList" AutomationProperties.AutomationId="SongList"
-        IsTitleBarAutoPaddingEnabled="True"
-        PaneDisplayMode="Left"
-        IsSettingsVisible="False"
-        IsBackButtonVisible="Collapsed"
-        OpenPaneLength="200"
-        IsPaneOpen="True"
-        SelectionChanged="SongList_SelectionChanged"
-        >
-        <ui:NavigationView.MenuItems>
-            -->
-    <!--<Button x:Name="OpenDebug" Content="Open Debug" Width="105" Click="OpenDebug_Click"/>-->
-    <!--
-        </ui:NavigationView.MenuItems>
-        <Canvas Height="184" Width="640">
-            <Image x:Name="SongImage" Height="160" Canvas.Left="10" Canvas.Top="11" Width="160"/>
-            <Label x:Name="SongTitle" Content="TITLE" Canvas.Left="179" Canvas.Top="2" Height="64" Width="449" FontSize="50" FontFamily="Segoe UI BOLD"/>
-            <Label x:Name="SongAuthor" Content="Author" Canvas.Left="179" Canvas.Top="59" Height="35" Width="449" FontSize="25" FontFamily="Segoe UI"/>
-            <Button x:Name="ControlBack" Content="◀◀" Canvas.Left="179" Canvas.Top="105" Height="65" Width="65" Click="Back_Click" FontSize ="27" FontFamily="Segoe UI BOLD"/>
-            <Button x:Name="ControlPlayPause" Content="▶️" Canvas.Left="249" Canvas.Top="105" Height="65" Width="65" Click="PlayPause_Click" FontSize ="27" FontFamily="Segoe UI BOLD"/>
-            <Button x:Name="ControlForward" Content="▶️▶️" Canvas.Left="319" Canvas.Top="105" Height="65" Width="65" Click="Forward_Click" FontSize ="27" FontFamily="Segoe UI BOLD"/>
-        </Canvas>
-    </ui:NavigationView>-->
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="20" />
@@ -61,14 +28,6 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="20" />
         </Grid.RowDefinitions>
-
-        <!--<ListView ItemsSource="{Binding MediaSessionModelList}" Grid.Column="2" Grid.Row="1">
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn Header="mediaSessionModel" DisplayMemberBinding="{Binding Information}" />
-                </GridView>
-            </ListView.View>
-        </ListView>-->
 
         <ListView ItemsSource="{Binding SongList}" Grid.Column="1" Grid.Row="1">
             <ListView.View>

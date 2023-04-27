@@ -29,7 +29,7 @@ public partial class MainWindow : Window
         SongList = new ObservableCollection<SongInfoModel>();
         MediaSessionModelList = new ObservableCollection<MediaInfo>();
 
-        _communicator = new SocketController("192.168.0.107", "8080", MediaManager);
+        _communicator = new SocketController("192.168.0.107", "8080");
 
         _mediaSessionHandler = new MediaSessionHandler(MediaManager);
         _masterVolumeHandler = new MasterVolumeHandler();

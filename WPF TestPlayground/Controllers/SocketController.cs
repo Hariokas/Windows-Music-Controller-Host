@@ -14,7 +14,6 @@ namespace WPF_TestPlayground.Controllers;
 public class SocketController
 {
     private readonly List<WebSocket> _clients = new();
-    private readonly MediaManager _mediaManager;
 
     private int _lastMessageHash;
     private int _lastImageHash;
@@ -23,9 +22,8 @@ public class SocketController
     public event EventHandler<MasterVolumeEventArgs> MasterVolumeCommandReceived;
     public event EventHandler<VolumeMixerEventArgs> VolumeMixerCommandReceived;
 
-    public SocketController(string serverIp, string port, MediaManager mediaManager)
+    public SocketController(string serverIp, string port)
     {
-        _mediaManager = mediaManager;
         _ = RunAsync(serverIp, port);
     }
 
