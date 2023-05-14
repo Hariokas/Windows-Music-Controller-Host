@@ -6,7 +6,13 @@
     <RootNamespace>Media_Controller_Remote_Host</RootNamespace>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
+    <StartupObject>Media_Controller_Remote_Host.App</StartupObject>
+    <ApplicationIcon>music.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="music.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="NAudio" Version="2.1.0" />
