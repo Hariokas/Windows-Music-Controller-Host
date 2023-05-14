@@ -115,7 +115,6 @@ public class MediaManager : IDisposable
     /// <summary>
     ///     Force updates <see cref="CurrentMediaSessions" /> dictionary and triggers <see cref="OnFocusedSessionChanged" />.
     ///     Exists to help mitigate bug where some events stop triggering:
-    ///     <a href="https://github.com/DubyaDude/WindowsMediaController/issues/6">Github Issue Link</a>.
     /// </summary>
     public void ForceUpdate()
     {
@@ -345,7 +344,6 @@ public class MediaManager : IDisposable
             }
             catch (COMException ex)
             {
-                // Silence error from bug https://github.com/DubyaDude/WindowsMediaController/issues/7
                 if (!ex.Message.Contains("0x800706BA")) throw;
             }
         }
