@@ -2,13 +2,13 @@
 using System.Collections.ObjectModel;
 using System.Windows;
 using Windows.Storage.Streams;
-using WPF_TestPlayground.Controllers;
-using WPF_TestPlayground.EventClasses;
-using WPF_TestPlayground.Handlers;
-using WPF_TestPlayground.Models;
-using static WPF_TestPlayground.Controllers.MediaManager;
+using Media_Controller_Remote_Host.Controllers;
+using Media_Controller_Remote_Host.EventClasses;
+using Media_Controller_Remote_Host.Handlers;
+using Media_Controller_Remote_Host.Models;
+using static Media_Controller_Remote_Host.Controllers.MediaManager;
 
-namespace WPF_TestPlayground;
+namespace Media_Controller_Remote_Host;
 
 public partial class MainWindow : Window
 {

@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Windows;
 using Windows.Media.Control;
-using WPF_TestPlayground.Controllers;
-using static WPF_TestPlayground.Controllers.MediaManager;
+using Media_Controller_Remote_Host.Controllers;
+using static Media_Controller_Remote_Host.Controllers.MediaManager;
 
-namespace WPF_TestPlayground;
+namespace Media_Controller_Remote_Host;
 
 /// <summary>
 ///     Interaction logic for DebugWindow.xaml
@@ -12,7 +12,7 @@ namespace WPF_TestPlayground;
 public partial class DebugWindow : Window
 {
     private static readonly MediaManager mediaManager = new();
-    private static MediaSession? currentSession = null;
+    private static MediaManager.MediaSession? currentSession = null;
 
     public DebugWindow()
     {
@@ -26,9 +26,9 @@ public partial class DebugWindow : Window
         mediaManager.Start();
     }
 
-    public List<MediaSession> mediaSessionList { get; set; } = new();
+    public List<MediaManager.MediaSession> mediaSessionList { get; set; } = new();
 
-    private void MediaManager_OnFocusedSessionChanged(MediaSession mediaSession)
+    private void MediaManager_OnFocusedSessionChanged(MediaManager.MediaSession mediaSession)
     {
         Application.Current.Dispatcher.Invoke(() =>
         {
@@ -36,7 +36,7 @@ public partial class DebugWindow : Window
         });
     }
 
-    private void MediaManager_OnAnySessionClosed(MediaSession mediaSession)
+    private void MediaManager_OnAnySessionClosed(MediaManager.MediaSession mediaSession)
     {
         Application.Current.Dispatcher.Invoke(() =>
         {
@@ -46,7 +46,7 @@ public partial class DebugWindow : Window
         });
     }
 
-    private void MediaManager_OnAnySessionOpened(MediaSession mediaSession)
+    private void MediaManager_OnAnySessionOpened(MediaManager.MediaSession mediaSession)
     {
         Application.Current.Dispatcher.Invoke(() =>
         {
@@ -56,19 +56,19 @@ public partial class DebugWindow : Window
         });
     }
 
-    private void CurrentSession_OnPlaybackStateChanged(MediaSession mediaSession,
+    private void CurrentSession_OnPlaybackStateChanged(MediaManager.MediaSession mediaSession,
         GlobalSystemMediaTransportControlsSessionPlaybackInfo? playbackInfo = null)
     {
         Application.Current.Dispatcher.Invoke(() => { UpdateUI(mediaSession); });
     }
 
-    private void CurrentSession_OnMediaPropertyChanged(MediaSession mediaSession,
+    private void CurrentSession_OnMediaPropertyChanged(MediaManager.MediaSession mediaSession,
         GlobalSystemMediaTransportControlsSessionMediaProperties mediaProperties)
     {
         Application.Current.Dispatcher.Invoke(() => { UpdateUI(mediaSession); });
     }
 
-    private void UpdateUI(MediaSession mediaSession)
+    private void UpdateUI(MediaManager.MediaSession mediaSession)
     {
     }
 }

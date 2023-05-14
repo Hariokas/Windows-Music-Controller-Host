@@ -8,9 +8,9 @@ using NAudio.CoreAudioApi;
 using NAudio;
 using System.Collections.Generic;
 using System.Data;
-using WPF_TestPlayground.Models;
+using Media_Controller_Remote_Host.Models;
 
-namespace WPF_TestPlayground.Controllers
+namespace Media_Controller_Remote_Host.Controllers
 {
     public class VolumeMixerController
     {

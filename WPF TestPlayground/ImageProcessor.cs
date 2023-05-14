@@ -2,7 +2,7 @@
 using Windows.Graphics.Imaging;
 using Windows.Storage.Streams;
 
-namespace WPF_TestPlayground;
+namespace Media_Controller_Remote_Host;
 
 public static class ImageProcessor
 {

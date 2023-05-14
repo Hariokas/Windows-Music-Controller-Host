@@ -2,7 +2,7 @@
 using System.Runtime.CompilerServices;
 using System;
 
-namespace WPF_TestPlayground.Models;
+namespace Media_Controller_Remote_Host.Models;
 
 public class MediaInfo : INotifyPropertyChanged
 {

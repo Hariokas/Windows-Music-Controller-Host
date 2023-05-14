@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace WPF_TestPlayground
+namespace Media_Controller_Remote_Host
 {
     /// <summary>
     /// Interaction logic for App.xaml

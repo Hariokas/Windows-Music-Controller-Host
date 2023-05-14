@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace WPF_TestPlayground.EventClasses;
+namespace Media_Controller_Remote_Host.EventClasses;
 
 public class VolumeMixerEventArgs : EventArgs
 {

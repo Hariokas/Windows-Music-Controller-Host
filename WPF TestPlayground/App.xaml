@@ -1,7 +1,7 @@
-﻿<Application x:Class="WPF_TestPlayground.App"
+﻿<Application x:Class="Media_Controller_Remote_Host.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:WPF_TestPlayground"
+             xmlns:local="clr-namespace:Media_Controller_Remote_Host"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
          

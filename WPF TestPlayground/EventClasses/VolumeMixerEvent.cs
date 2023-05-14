@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
-using WPF_TestPlayground.Models;
+using Media_Controller_Remote_Host.Models;
 
-namespace WPF_TestPlayground.EventClasses;
+namespace Media_Controller_Remote_Host.EventClasses;
 
 public enum VolumeMixerEventType
 {

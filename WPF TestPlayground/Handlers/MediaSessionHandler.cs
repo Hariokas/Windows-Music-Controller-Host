@@ -2,17 +2,17 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using Windows.Media.Control;
-using WPF_TestPlayground.Controllers;
-using WPF_TestPlayground.EventClasses;
-using WPF_TestPlayground.Models;
-using static WPF_TestPlayground.Controllers.MediaManager;
+using Media_Controller_Remote_Host.Controllers;
+using Media_Controller_Remote_Host.EventClasses;
+using Media_Controller_Remote_Host.Models;
+using static Media_Controller_Remote_Host.Controllers.MediaManager;
 
-namespace WPF_TestPlayground.Handlers;
+namespace Media_Controller_Remote_Host.Handlers;
 
 public class MediaSessionHandler
 {
     private readonly MediaManager MediaManager;
-    private static MediaSession? _currentMediaSession;
+    private static MediaManager.MediaSession? _currentMediaSession;
 
     private static int _currentSessionId;
 
@@ -36,7 +36,7 @@ public class MediaSessionHandler
     public event EventHandler<MediaSessionEventArgs> MediaSessionOpened;
     public event EventHandler<ThumbnailEventArgs>? ThumbnailChanged;
 
-    private async void MediaManager_OnAnySessionOpened(MediaSession session)
+    private async void MediaManager_OnAnySessionOpened(MediaManager.MediaSession session)
     {
         Trace.WriteLine("MediaManager_OnAnySessionOpened called");
 
@@ -67,7 +67,7 @@ public class MediaSessionHandler
         }
     }
 
-    private async void MediaManager_OnAnySessionClosed(MediaSession session)
+    private async void MediaManager_OnAnySessionClosed(MediaManager.MediaSession session)
     {
         Trace.WriteLine("MediaManager_OnAnySessionClosed called");
 
@@ -98,7 +98,7 @@ public class MediaSessionHandler
         }
     }
 
-    private async void MediaManager_OnFocusedSessionChanged(MediaSession session)
+    private async void MediaManager_OnFocusedSessionChanged(MediaManager.MediaSession session)
     {
         Trace.WriteLine("MediaManager_OnFocusedSessionChanged called");
 
@@ -141,7 +141,7 @@ public class MediaSessionHandler
         }
     }
 
-    private async void MediaManager_OnAnyPlaybackStateChanged(MediaSession session,
+    private async void MediaManager_OnAnyPlaybackStateChanged(MediaManager.MediaSession session,
         GlobalSystemMediaTransportControlsSessionPlaybackInfo args)
     {
         Trace.WriteLine("MediaManager_OnAnyPlaybackStateChanged called");
@@ -183,7 +183,7 @@ public class MediaSessionHandler
         }
     }
 
-    private async void MediaManager_OnAnyMediaPropertyChanged(MediaSession session,
+    private async void MediaManager_OnAnyMediaPropertyChanged(MediaManager.MediaSession session,
         GlobalSystemMediaTransportControlsSessionMediaProperties args)
     {
         Trace.WriteLine("MediaManager_OnAnyMediaPropertyChanged called");
@@ -299,7 +299,7 @@ public class MediaSessionHandler
         return mediaInfo;
     }
 
-    public static MediaSession GetCurrentMediaSession()
+    public static MediaManager.MediaSession GetCurrentMediaSession()
     {
         return _currentMediaSession;
     }

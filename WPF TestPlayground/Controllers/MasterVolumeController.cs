@@ -1,7 +1,7 @@
 ﻿using System;
 using NAudio.CoreAudioApi;
 
-namespace WPF_TestPlayground.Controllers;
+namespace Media_Controller_Remote_Host.Controllers;
 
 public class MasterVolumeController
 {

@@ -1,4 +1,4 @@
-﻿namespace WPF_TestPlayground.EventClasses;
+﻿namespace Media_Controller_Remote_Host.EventClasses;
 
 public enum BaseEventType
 {

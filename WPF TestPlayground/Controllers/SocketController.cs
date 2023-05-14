@@ -6,10 +6,10 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Media_Controller_Remote_Host.EventClasses;
 using Newtonsoft.Json;
-using WPF_TestPlayground.EventClasses;
 
-namespace WPF_TestPlayground.Controllers;
+namespace Media_Controller_Remote_Host.Controllers;
 
 public class SocketController
 {

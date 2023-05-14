@@ -3,7 +3,7 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 
-namespace WPF_TestPlayground.Controllers;
+namespace Media_Controller_Remote_Host.Controllers;
 
 public static class NetworkController
 {

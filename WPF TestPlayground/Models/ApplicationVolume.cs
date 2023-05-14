@@ -1,4 +1,4 @@
-﻿namespace WPF_TestPlayground.Models;
+﻿namespace Media_Controller_Remote_Host.Models;
 
 public class ApplicationVolume
 {

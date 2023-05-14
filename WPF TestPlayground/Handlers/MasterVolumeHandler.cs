@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
-using WPF_TestPlayground.Controllers;
-using WPF_TestPlayground.EventClasses;
+using Media_Controller_Remote_Host.Controllers;
+using Media_Controller_Remote_Host.EventClasses;
 
-namespace WPF_TestPlayground.Handlers;
+namespace Media_Controller_Remote_Host.Handlers;
 
 public class MasterVolumeHandler
 {
