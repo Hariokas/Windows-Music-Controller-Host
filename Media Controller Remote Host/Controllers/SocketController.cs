@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.WebSockets;
 using System.Text;
@@ -11,27 +12,41 @@ using Newtonsoft.Json;
 
 namespace Media_Controller_Remote_Host.Controllers;
 
-public class SocketController
+public class SocketController : IDisposable
 {
     private readonly List<WebSocket> _clients = new();
+    private bool _disposed;
+    private int _lastImageHash;
 
     private int _lastMessageHash;
-    private int _lastImageHash;
+
+    private HttpListener _server;
+
+    public SocketController(string serverIp, string port)
+    {
+        IpAddress = serverIp;
+        Port = port;
+        _ = RunAsync();
+    }
+
+    public string IpAddress { get; }
+    public string Port { get; }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
     public event EventHandler<MediaSessionEventArgs> MediaSessionCommandReceived;
     public event EventHandler<MasterVolumeEventArgs> MasterVolumeCommandReceived;
     public event EventHandler<VolumeMixerEventArgs> VolumeMixerCommandReceived;
 
-    public SocketController(string serverIp, string port)
+    private async Task RunAsync()
     {
-        _ = RunAsync(serverIp, port);
-    }
-
-    private async Task RunAsync(string serverIp, string serverPort)
-    {
-        Trace.WriteLine($"WebSocket Server running on ws://{serverIp}:{serverPort}");
-        var server = StartServer(serverIp, serverPort);
-        _ = AcceptClientsAsync(server);
+        Trace.WriteLine($"WebSocket Server running on ws://{IpAddress}:{Port}");
+        _server = StartServer(IpAddress, Port);
+        _ = AcceptClientsAsync(_server);
     }
 
     private static HttpListener StartServer(string serverIp, string serverPort)
@@ -110,20 +125,23 @@ public class SocketController
             switch (baseEvent.EventType)
             {
                 case BaseEventType.MasterVolumeEvent:
-                    var masterVolumeEvent = JsonConvert.DeserializeObject<MasterVolumeEvent>(message) 
-                                            ?? throw new ArgumentNullException($"Failed to deserialize {nameof(MasterVolumeEvent)}");
+                    var masterVolumeEvent = JsonConvert.DeserializeObject<MasterVolumeEvent>(message)
+                                            ?? throw new ArgumentNullException(
+                                                $"Failed to deserialize {nameof(MasterVolumeEvent)}");
                     MasterVolumeCommandReceived?.Invoke(this, new MasterVolumeEventArgs(masterVolumeEvent));
                     break;
 
                 case BaseEventType.MediaSessionEvent:
-                    var mediaSessionEvent = JsonConvert.DeserializeObject<MediaSessionEvent>(message) 
-                                            ?? throw new ArgumentNullException($"Failed to deserialize {nameof(MasterVolumeEvent)}");
+                    var mediaSessionEvent = JsonConvert.DeserializeObject<MediaSessionEvent>(message)
+                                            ?? throw new ArgumentNullException(
+                                                $"Failed to deserialize {nameof(MasterVolumeEvent)}");
                     MediaSessionCommandReceived?.Invoke(this, new MediaSessionEventArgs(mediaSessionEvent));
                     break;
 
                 case BaseEventType.VolumeMixerEvent:
-                    var volumeMixerEvent = JsonConvert.DeserializeObject<VolumeMixerEvent>(message) 
-                                           ?? throw new ArgumentNullException($"Failed to deserialize {nameof(MasterVolumeEvent)}");
+                    var volumeMixerEvent = JsonConvert.DeserializeObject<VolumeMixerEvent>(message)
+                                           ?? throw new ArgumentNullException(
+                                               $"Failed to deserialize {nameof(MasterVolumeEvent)}");
                     VolumeMixerCommandReceived?.Invoke(this, new VolumeMixerEventArgs(volumeMixerEvent));
                     break;
 
@@ -192,4 +210,26 @@ public class SocketController
         _lastImageHash = imageDataHash;
     }
 
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed) return;
+
+        if (!disposing)
+        {
+            _server?.Stop();
+            _server?.Close();
+            _server = null;
+
+            foreach (var client in _clients.Where(client => client.State == WebSocketState.Open))
+                client.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None).Wait();
+            _clients.Clear();
+        }
+
+        _disposed = true;
+    }
+
+    ~SocketController()
+    {
+        Dispose(false);
+    }
 }

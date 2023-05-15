@@ -65,7 +65,7 @@ public partial class MainWindow : Window
 
     private async void Communicator_MediaSessionCommandReceived(object? sender, MediaSessionEventArgs e)
     {
-         _mediaSessionHandler.MediaSessionCommandReceived(sender, e);
+        _mediaSessionHandler.MediaSessionCommandReceived(sender, e);
     }
 
     private void Communicator_VolumeMixerCommandReceived(object? sender, VolumeMixerEventArgs e)
@@ -122,6 +122,22 @@ public partial class MainWindow : Window
         {
             SongList?.Add(new SongInfoModel { FirstLine = $"{DateTime.Now:HH:mm:ss.fff} {toPrint}" });
         });
+    }
+
+    private void SettingsButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var settings = new SettingsWindow(_communicator.IpAddress, _communicator.Port);
+
+        if (settings.ShowDialog() == true)
+        {
+            _communicator.Dispose();
+            _communicator = new SocketController(settings.IpAddress, settings.Port);
+
+            // Re-subscribe to events
+            _communicator.MasterVolumeCommandReceived += Communicator_MasterVolumeCommandReceived;
+            _communicator.VolumeMixerCommandReceived += Communicator_VolumeMixerCommandReceived;
+            _communicator.MediaSessionCommandReceived += Communicator_MediaSessionCommandReceived;
+        }
     }
 }
 
