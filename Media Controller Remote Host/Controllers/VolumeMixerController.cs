@@ -29,12 +29,18 @@ namespace Media_Controller_Remote_Host.Controllers
                 using (var session = sessions[i])
                 {
                     var control = session;
+                    var processId = (int)control.GetProcessID;
+                    var process = System.Diagnostics.Process.GetProcessById(processId);
+                    var appName = string.IsNullOrEmpty(process.MainWindowTitle) ? process.ProcessName : process.MainWindowTitle;
+
+                    if (appName == "ShellExperienceHost") appName = "System sounds";
+
                     using (var simpleVolume = session.SimpleAudioVolume)
                     {
                         appVolumes.Add(new ApplicationVolume
                         {
-                            ProcessID = (int)control.GetProcessID,
-                            DisplayName = control.DisplayName,
+                            ProcessID = processId,
+                            DisplayName = appName,
                             Volume = simpleVolume.Volume
                         });
                     }
