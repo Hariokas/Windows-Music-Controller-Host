@@ -2,10 +2,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
+using Fleck;
 using Media_Controller_Remote_Host.EventClasses;
 using Newtonsoft.Json;
-using Fleck;
 
 namespace Media_Controller_Remote_Host.Controllers;
 
@@ -61,10 +60,7 @@ public class SocketController : IDisposable
                 _clients.Remove(socket);
             };
 
-            socket.OnMessage = message =>
-            {
-                HandleClientMessage(socket, message);
-            };
+            socket.OnMessage = message => { HandleClientMessage(socket, message); };
         });
 
         return server;
@@ -116,10 +112,8 @@ public class SocketController : IDisposable
         Trace.WriteLine($"Sending image of size: {imageData.Length}");
 
         foreach (var client in _clients)
-        {
             if (client.IsAvailable)
                 client.Send(imageData);
-        }
     }
 
     public void BroadcastMessage(string message)
@@ -127,10 +121,8 @@ public class SocketController : IDisposable
         Trace.WriteLine($"Sending message: {message}");
 
         foreach (var client in _clients)
-        {
             if (client.IsAvailable)
                 client.Send(message);
-        }
     }
 
     public void DistributeJsonAsync(object jsonObject)

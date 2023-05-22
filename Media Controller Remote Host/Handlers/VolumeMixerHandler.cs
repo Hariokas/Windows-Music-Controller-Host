@@ -3,47 +3,45 @@ using System.Diagnostics;
 using Media_Controller_Remote_Host.Controllers;
 using Media_Controller_Remote_Host.EventClasses;
 
-namespace Media_Controller_Remote_Host.Handlers
+namespace Media_Controller_Remote_Host.Handlers;
+
+public class VolumeMixerHandler
 {
-    public class VolumeMixerHandler
+    private readonly VolumeMixerController _controller = new();
+    public event EventHandler<VolumeMixerEventArgs> SendMessageRequested;
+
+    public async void VolumeMixerCommandReceived(object sender, VolumeMixerEventArgs args)
     {
-        private readonly VolumeMixerController _controller = new();
-        public event EventHandler<VolumeMixerEventArgs> SendMessageRequested;
-
-        public async void VolumeMixerCommandReceived(object sender, VolumeMixerEventArgs args)
+        try
         {
-            try
+            switch (args.VolumeMixerEvent.VolumeMixerEventType)
             {
-                switch (args.VolumeMixerEvent.VolumeMixerEventType)
-                {
-                    case VolumeMixerEventType.GetApplicationVolumes:
+                case VolumeMixerEventType.GetApplicationVolumes:
 
-                        var appVolumesList = _controller.GetApplicationVolumes();
-                        SendMessageRequested?.Invoke(this, new VolumeMixerEventArgs(new VolumeMixerEvent
-                        {
-                            VolumeMixerEventType = VolumeMixerEventType.GetApplicationVolumes,
-                            ApplicationVolumes = appVolumesList
-                        }));
-                        break;
+                    var appVolumesList = _controller.GetApplicationVolumes();
+                    SendMessageRequested?.Invoke(this, new VolumeMixerEventArgs(new VolumeMixerEvent
+                    {
+                        VolumeMixerEventType = VolumeMixerEventType.GetApplicationVolumes,
+                        ApplicationVolumes = appVolumesList
+                    }));
+                    break;
 
-                    case VolumeMixerEventType.SetApplicationVolume:
+                case VolumeMixerEventType.SetApplicationVolume:
 
-                        var application = args.VolumeMixerEvent.ApplicationVolume;
-                        if (application == null || application.Volume == null || application.ProcessID == null) return;
+                    var application = args.VolumeMixerEvent.ApplicationVolume;
+                    if (application == null || application.Volume == null || application.ProcessID == null) return;
 
-                        _controller.SetApplicationVolume(application.ProcessID, (float)application.Volume);
-                        break;
+                    _controller.SetApplicationVolume(application.ProcessID, application.Volume);
+                    break;
 
-                    default:
-                        Trace.WriteLine($"Unknown event type: {args.VolumeMixerEvent.VolumeMixerEventType}");
-                        break;
-                }
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine($"[VolumeMixerCommandReceived]: Error: {ex}");
+                default:
+                    Trace.WriteLine($"Unknown event type: {args.VolumeMixerEvent.VolumeMixerEventType}");
+                    break;
             }
         }
-
+        catch (Exception ex)
+        {
+            Trace.WriteLine($"[VolumeMixerCommandReceived]: Error: {ex}");
+        }
     }
 }
