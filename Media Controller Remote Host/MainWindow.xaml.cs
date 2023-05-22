@@ -53,14 +53,14 @@ public partial class MainWindow : Window
         MediaManager.Start();
     }
 
-    private async void VolumeMixerHandler_SendMessageRequested(object? sender, VolumeMixerEventArgs e)
+    private void VolumeMixerHandler_SendMessageRequested(object? sender, VolumeMixerEventArgs e)
     {
-        await _communicator.DistributeJsonAsync(e.VolumeMixerEvent);
+        _communicator.DistributeJsonAsync(e.VolumeMixerEvent);
     }
 
-    private async void MasterVolumeHandler_SendMessageRequested(object sender, MasterVolumeEventArgs e)
+    private void MasterVolumeHandler_SendMessageRequested(object sender, MasterVolumeEventArgs e)
     {
-        await _communicator.DistributeJsonAsync(e.MasterVolumeEvent);
+        _communicator.DistributeJsonAsync(e.MasterVolumeEvent);
     }
 
     private async void Communicator_MediaSessionCommandReceived(object? sender, MediaSessionEventArgs e)
@@ -78,39 +78,39 @@ public partial class MainWindow : Window
         _masterVolumeHandler.MasterVolumeCommandReceived(sender, e);
     }
 
-    private async void MediaSessionHandler_ThumbnailChanged(object? sender, MediaSessionHandler.ThumbnailEventArgs e)
+    private void MediaSessionHandler_ThumbnailChanged(object? sender, MediaSessionHandler.ThumbnailEventArgs e)
     {
-        _ = _communicator.DistributeImageAsync(e.ThumbnailData);
+        _communicator.DistributeImageAsync(e.ThumbnailData);
     }
 
-    private async void MediaSessionHandler_MediaSessionOpened(object? sender, MediaSessionEventArgs e)
+    private void MediaSessionHandler_MediaSessionOpened(object? sender, MediaSessionEventArgs e)
     {
-        await _communicator.DistributeJsonAsync(e.MediaSessionEvent);
+        _communicator.DistributeJsonAsync(e.MediaSessionEvent);
         WriteLineColor($"New session: [{e.MediaSessionEvent.MediaSessionId}] - [{e.MediaSessionEvent.MediaSessionName}]");
     }
 
-    private async void MediaSessionHandler_MediaSessionClosed(object? sender, MediaSessionEventArgs e)
+    private void MediaSessionHandler_MediaSessionClosed(object? sender, MediaSessionEventArgs e)
     {
-        await _communicator.DistributeJsonAsync(e.MediaSessionEvent);
+        _communicator.DistributeJsonAsync(e.MediaSessionEvent);
         WriteLineColor($"Session closed: [{e.MediaSessionEvent.MediaSessionId}] - [{e.MediaSessionEvent.MediaSessionName}]");
     }
 
-    private async void MediaSessionHandler_FocusedSessionChanged(object? sender, MediaSessionEventArgs e)
+    private void MediaSessionHandler_FocusedSessionChanged(object? sender, MediaSessionEventArgs e)
     {
-        await _communicator.DistributeJsonAsync(e.MediaSessionEvent);
+        _communicator.DistributeJsonAsync(e.MediaSessionEvent);
         WriteLineColor($"Focused session changed to: [{e.MediaSessionEvent.MediaSessionId}] - [{e.MediaSessionEvent.MediaSessionName}]");
     }
 
-    private async void MediaSessionHandler_MediaPropertiesChanged(object sender, MediaSessionEventArgs e)
+    private void MediaSessionHandler_MediaPropertiesChanged(object sender, MediaSessionEventArgs e)
     {
-        await _communicator.DistributeJsonAsync(e.MediaSessionEvent);
+        _communicator.DistributeJsonAsync(e.MediaSessionEvent);
         WriteLineColor($"Media properties changed for: [{e.MediaSessionEvent.MediaSessionId}] - [{e.MediaSessionEvent.MediaSessionName}]");
         WriteLineColor($"Properties: [{e.MediaSessionEvent.Artist}] - [{e.MediaSessionEvent.SongName}] [{e.MediaSessionEvent.PlaybackStatus}]");
     }
 
-    private async void MediaSessionHandler_PlaybackStateChanged(object sender, MediaSessionEventArgs e)
+    private void MediaSessionHandler_PlaybackStateChanged(object sender, MediaSessionEventArgs e)
     {
-        await _communicator.DistributeJsonAsync(e.MediaSessionEvent);
+        _communicator.DistributeJsonAsync(e.MediaSessionEvent);
         WriteLineColor($"Playback status changed for: [{e.MediaSessionEvent.MediaSessionId}] - [{e.MediaSessionEvent.MediaSessionName}]; Playback status: [{e.MediaSessionEvent.PlaybackStatus}] [{e.MediaSessionEvent.Artist}] - [{e.MediaSessionEvent.SongName}]");
     }
 
