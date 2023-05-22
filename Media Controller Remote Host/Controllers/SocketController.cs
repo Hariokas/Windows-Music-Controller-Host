@@ -25,6 +25,7 @@ public class SocketController : IDisposable
 
     public string IpAddress { get; }
     public string Port { get; }
+    public int ClientCount => _clients.Count;
 
     public void Dispose()
     {
@@ -35,6 +36,8 @@ public class SocketController : IDisposable
     public event EventHandler<MediaSessionEventArgs> MediaSessionCommandReceived;
     public event EventHandler<MasterVolumeEventArgs> MasterVolumeCommandReceived;
     public event EventHandler<VolumeMixerEventArgs> VolumeMixerCommandReceived;
+    public event Action ClientConnected;
+    public event Action ClientDisconnected;
 
     private void Run()
     {
@@ -52,12 +55,14 @@ public class SocketController : IDisposable
             {
                 Trace.WriteLine($"Client connected! [{socket.ConnectionInfo.ClientIpAddress}]");
                 _clients.Add(socket);
+                ClientConnected?.Invoke();
             };
 
             socket.OnClose = () =>
             {
                 Trace.WriteLine($"Client disconnected! [{socket.ConnectionInfo.ClientIpAddress}]");
                 _clients.Remove(socket);
+                ClientDisconnected?.Invoke();
             };
 
             socket.OnMessage = message => { HandleClientMessage(socket, message); };

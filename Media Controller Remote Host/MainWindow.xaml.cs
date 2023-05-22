@@ -45,12 +45,22 @@ public partial class MainWindow : Window
         _communicator.MasterVolumeCommandReceived += Communicator_MasterVolumeCommandReceived;
         _communicator.VolumeMixerCommandReceived += Communicator_VolumeMixerCommandReceived;
         _communicator.MediaSessionCommandReceived += Communicator_MediaSessionCommandReceived;
+        _communicator.ClientConnected += UpdateClientCount;
+        _communicator.ClientDisconnected += UpdateClientCount;
 
         _masterVolumeHandler.SendMessageRequested += MasterVolumeHandler_SendMessageRequested;
         _volumeMixerHandler.SendMessageRequested += VolumeMixerHandler_SendMessageRequested;
 
         DataContext = this;
         MediaManager.Start();
+    }
+
+    private void UpdateClientCount()
+    {
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            ClientCountRun.Text = _communicator.ClientCount.ToString();
+        });
     }
 
     private void VolumeMixerHandler_SendMessageRequested(object? sender, VolumeMixerEventArgs e)

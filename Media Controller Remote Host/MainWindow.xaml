@@ -25,7 +25,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="20" />
+            <RowDefinition Height="30" />
         </Grid.RowDefinitions>
 
         <ListView ItemsSource="{Binding SongList}" Grid.Column="1" Grid.Row="1">
@@ -37,7 +37,15 @@
         </ListView>
 
         <Button Content="Settings" Click="SettingsButton_OnClick" Grid.Row="0" Grid.Column="1" Width="70" HorizontalAlignment="Left"/>
-
+        <Label Grid.Column="1" 
+               Grid.Row="8" 
+               HorizontalAlignment="Left" 
+               VerticalAlignment="Center">
+            <TextBlock>
+                <Run Text="Active Clients: " />
+                <Run x:Name="ClientCountRun" Text="0" />
+            </TextBlock>
+        </Label>
     </Grid>
 
 </Window>
