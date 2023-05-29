@@ -49,24 +49,31 @@ public class SocketController : IDisposable
     {
         var server = new WebSocketServer($"ws://{serverIp}:{serverPort}");
 
-        server.Start(socket =>
+        try
         {
-            socket.OnOpen = () =>
+            server.Start(socket =>
             {
-                Trace.WriteLine($"Client connected! [{socket.ConnectionInfo.ClientIpAddress}]");
-                _clients.Add(socket);
-                ClientConnected?.Invoke();
-            };
+                socket.OnOpen = () =>
+                {
+                    Trace.WriteLine($"Client connected! [{socket.ConnectionInfo.ClientIpAddress}]");
+                    _clients.Add(socket);
+                    ClientConnected?.Invoke();
+                };
 
-            socket.OnClose = () =>
-            {
-                Trace.WriteLine($"Client disconnected! [{socket.ConnectionInfo.ClientIpAddress}]");
-                _clients.Remove(socket);
-                ClientDisconnected?.Invoke();
-            };
+                socket.OnClose = () =>
+                {
+                    Trace.WriteLine($"Client disconnected! [{socket.ConnectionInfo.ClientIpAddress}]");
+                    _clients.Remove(socket);
+                    ClientDisconnected?.Invoke();
+                };
 
-            socket.OnMessage = message => { HandleClientMessage(socket, message); };
-        });
+                socket.OnMessage = message => { HandleClientMessage(socket, message); };
+            });
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine(ex.Message);
+        }
 
         return server;
     }
